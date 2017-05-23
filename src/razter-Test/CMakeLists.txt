@@ -15,7 +15,11 @@ else()
 endif()
 
 target_include_directories (razter-Test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../include)
+target_include_directories (razter-Test PUBLIC ${DirectX_D3D11_INCLUDE_DIR})
+target_include_directories (razter-Test PUBLIC ${DirectX_D3DX11_INCLUDE_DIR})
 
 target_link_libraries (razter-Test LINK_PUBLIC VKL)
 target_link_libraries (razter-Test LINK_PUBLIC razter)
 target_link_libraries (razter-Test glfw ${GLFW_LIBRARIES})
+target_link_libraries (razter-Test LINK_PUBLIC ${DirectX_D3DX11_LIBRARY})
+target_link_libraries (razter-Test LINK_PUBLIC ${DirectX_D3D11_LIBRARY})

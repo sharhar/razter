@@ -3,7 +3,7 @@
 int main() {
 	glfwInit();
 
-	RZRenderContext* ctx = rzCreateRenderContext(RZ_RC_VK);
+	RZRenderContext* ctx = rzCreateRenderContext(RZ_RC_DX);
 
 	GLFWwindow* window = rzCreateWindow(ctx, 800, 600, "Razter Test");
 
@@ -12,8 +12,6 @@ int main() {
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
 		rzClear(ctx);
-
-		
 
 		rzSwap(ctx);
 	}

@@ -8,6 +8,15 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
+list (APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
+if (WIN32)
+    add_definitions (-D_WIN32_WINNT=0x0602 -DWINVER=0x0602)
+
+    find_package (DirectX)
+endif()
+
+
 if(NOT MSVC)
 	include(CheckCXXCompilerFlag)
 	CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)

@@ -20,7 +20,6 @@ typedef struct RZRenderContext {
 
 #define RZ_RC_GL 1
 #define RZ_RC_VK 2
-#define RZ_RC_DX 3
 
 RZRenderContext* rzCreateRenderContext(int type);
 
@@ -31,7 +30,6 @@ void rzSwap(RZRenderContext* ctx);
 
 void rzglLoadPFN(RZRenderContext* ctx);
 void rzvkLoadPFN(RZRenderContext* ctx);
-void rzdxLoadPFN(RZRenderContext* ctx);
 
 #ifdef __cplusplus
 }
