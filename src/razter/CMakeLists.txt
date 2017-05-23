@@ -7,7 +7,5 @@ file(GLOB_RECURSE RAZTER_C *.c)
 add_library(razter ${RAZTER_HEADERS} ${RAZTER_CPP} ${RAZTER_C})
 
 target_include_directories (razter PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../include)
-target_include_directories (razter PUBLIC ${DirectX_D3D11_INCLUDE_DIR})
-target_include_directories (razter PUBLIC ${DirectX_D3DX11_INCLUDE_DIR})
 
 target_link_libraries (razter glfw ${GLFW_LIBRARIES})
