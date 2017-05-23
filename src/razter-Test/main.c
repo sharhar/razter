@@ -3,7 +3,7 @@
 int main() {
 	glfwInit();
 
-	RZRenderContext* ctx = rzCreateRenderContext(RZ_RC_DX);
+	RZRenderContext* ctx = rzCreateRenderContext(RZ_PLATFORM_OPENGL);
 
 	GLFWwindow* window = rzCreateWindow(ctx, 800, 600, "Razter Test");
 

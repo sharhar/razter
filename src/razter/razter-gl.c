@@ -6,6 +6,11 @@ typedef struct GLCTX {
 	GLFWwindow* window;
 } GLCTX;
 
+typedef struct GLBuffer {
+	GLuint vao;
+	GLuint vbo;
+} GLBuffer;
+
 void rzglInit(RZRenderContext* ctx) {
 	ctx->ctx = (GLCTX*)malloc(sizeof(GLCTX));
 }
@@ -42,10 +47,52 @@ void rzglSwap(RZRenderContext* ctx) {
 	glfwSwapBuffers(glCTX->window);
 }
 
+RZBuffer* rzglAllocateBuffer(RZRenderContext* ctx, RZBufferCreateInfo* createInfo, void* data, size_t size) {
+	RZBuffer* buffer = malloc(sizeof(RZBuffer));
+
+	buffer->size = size;
+	buffer->data = malloc(sizeof(GLBuffer));
+	GLBuffer* glBuff = (GLBuffer*)buffer->data;
+
+	glGenVertexArrays(1, &glBuff->vao);
+	glBindVertexArray(glBuff->vao);
+
+	glGenBuffers(1, &glBuff->vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, glBuff->vbo);
+
+	if (createInfo->usage == RZ_BUFFER_USAGE_STATIC) {
+		glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+	} else if (createInfo->usage == RZ_BUFFER_USAGE_DYNAMIC) {
+		glBufferData(GL_ARRAY_BUFFER, size, data, GL_DYNAMIC_DRAW);
+	}
+	
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	return buffer;
+}
+
+void rzglUpdateBuffer(RZRenderContext* ctx, RZBuffer* buffer, void* data, size_t size) {
+
+}
+
+void rzglBindBuffer(RZRenderContext* ctx, RZBuffer* buffer) {
+	
+}
+
+void rzglFreeBuffer(RZRenderContext* ctx, RZBuffer* buffer) {
+
+}
+
 void rzglLoadPFN(RZRenderContext* ctx) {
 	ctx->init = rzglInit;
 	ctx->createWindow = rzglCreateWindow;
 	ctx->clear = rzglClear;
 	ctx->setClearColor = rzglSetClearColor;
 	ctx->swap = rzglSwap;
+
+	ctx->allocBuffer = rzglAllocateBuffer;
+	ctx->updateBuffer = rzglUpdateBuffer;
+	ctx->bindBuffer = rzglBindBuffer;
+	ctx->freeBuffer = rzglFreeBuffer;
 }

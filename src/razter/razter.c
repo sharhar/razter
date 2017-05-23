@@ -1,12 +1,12 @@
 #include <razter/razter.h>
 #include <malloc.h>
 
-RZRenderContext* rzCreateRenderContext(int type) {
+RZRenderContext* rzCreateRenderContext(RZPlatform type) {
 	RZRenderContext* ctx = malloc(sizeof(RZRenderContext));
 
-	if (type == RZ_RC_GL) {
+	if (type == RZ_PLATFORM_OPENGL) {
 		rzglLoadPFN(ctx);
-	} else if (type == RZ_RC_VK) {
+	} else if (type == RZ_PLATFORM_VULKAN) {
 		if (glfwVulkanSupported()) {
 			rzvkLoadPFN(ctx);
 		} else {
@@ -36,4 +36,20 @@ void rzSetClearColor(RZRenderContext* ctx, float r, float g, float b, float a) {
 
 void rzSwap(RZRenderContext* ctx) {
 	ctx->swap(ctx);
+}
+
+RZBuffer* rzAllocateBuffer(RZRenderContext* ctx, RZBufferCreateInfo* createInfo, void* data, size_t size) {
+	return ctx->allocBuffer(ctx, createInfo, data, size);
+}
+
+void rzUpdateBuffer(RZRenderContext* ctx, RZBuffer* buffer, void* data, size_t size) {
+	ctx->updateBuffer(ctx, buffer, data, size);
+}
+
+void rzBindBuffer(RZRenderContext* ctx, RZBuffer* buffer) {
+	ctx->bindBuffer(ctx, buffer);
+}
+
+void rzFreeBuffer(RZRenderContext* ctx, RZBuffer* buffer) {
+	ctx->freeBuffer(ctx, buffer);
 }
