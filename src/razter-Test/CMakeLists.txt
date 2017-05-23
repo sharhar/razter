@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.11)
 
-file(GLOB_RECURSE RAZTER_TEST_SRC *.cpp)
+file(GLOB_RECURSE RAZTER_TEST_H *.h)
+file(GLOB_RECURSE RAZTER_TEST_C *.c)
+file(GLOB_RECURSE RAZTER_TEST_CPP *.cpp)
 
 if(APPLE)
 	add_executable(
@@ -9,9 +11,11 @@ if(APPLE)
 		${RAZTER_TEST_SRC}
 	)
 else()
-	add_executable(razter-Test ${RAZTER_TEST_SRC})
+	add_executable(razter-Test ${RAZTER_TEST_H} ${RAZTER_TEST_C} ${RAZTER_TEST_CPP})
 endif()
 
-target_link_libraries (razter-Test LINK_PUBLIC ${OPENGL_LIBRARIES})
+target_include_directories (razter-Test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../include)
+
 target_link_libraries (razter-Test LINK_PUBLIC VKL)
+target_link_libraries (razter-Test LINK_PUBLIC razter)
 target_link_libraries (razter-Test glfw ${GLFW_LIBRARIES})
