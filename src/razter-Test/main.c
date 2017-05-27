@@ -4,7 +4,7 @@
 int main() {
 	glfwInit();
 
-	RZPlatform platform = RZ_PLATFORM_OPENGL;
+	RZPlatform platform = RZ_PLATFORM_VULKAN;
 
 	RZRenderContext* ctx = rzCreateRenderContext(platform);
 
@@ -38,8 +38,8 @@ int main() {
 	RZShaderCreateInfo shaderCreateInfo;
 	shaderCreateInfo.isPath = RZ_TRUE;
 	shaderCreateInfo.vertexAttribDesc = &vertexAttribDesc;
-	shaderCreateInfo.vertData = "res/shader.vert";
-	shaderCreateInfo.fragData = "res/shader.frag";
+	shaderCreateInfo.vertData = "res/shader-vert.spv";
+	shaderCreateInfo.fragData = "res/shader-frag.spv";
 	shaderCreateInfo.vertSize = 0;
 	shaderCreateInfo.fragSize = 0;
 

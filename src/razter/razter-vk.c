@@ -15,6 +15,11 @@ typedef struct VKBuffer {
 	VKLBuffer* buffer;
 } VKBuffer;
 
+typedef struct  VKShader{
+	VKLShader* shader;
+	VKLGraphicsPipeline* pipeline;
+} VKShader;
+
 void rzvkInit(RZRenderContext* ctx) {
 	ctx->ctx = (VKCTX*)malloc(sizeof(VKCTX));
 }
@@ -95,11 +100,63 @@ void rzvkFreeBuffer(RZRenderContext* ctx, RZBuffer* buffer) {
 }
 
 RZShader* rzvkCreateShader(RZRenderContext* ctx, RZShaderCreateInfo* createInfo) {
+	VKCTX* vkCTX = (VKCTX*)ctx->ctx;
 
+	VKShader* shader = malloc(sizeof(VKShader));
+	
+	char* shaderPaths[2];
+	shaderPaths[0] = createInfo->vertData;
+	shaderPaths[1] = createInfo->fragData;
+
+	VkShaderStageFlagBits stages[2];
+	stages[0] = VK_SHADER_STAGE_VERTEX_BIT;
+	stages[1] = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	VkFormat* formats = malloc(sizeof(VkFormat) * createInfo->vertexAttribDesc->count);
+	
+	for (uint32_t i = 0; i < createInfo->vertexAttribDesc->count;i++) {
+		uint32_t size = createInfo->vertexAttribDesc->sizes[i];
+		if (size == 1) {
+			formats[i] = VK_FORMAT_R32_SFLOAT;
+		} else if (size == 2) {
+			formats[i] = VK_FORMAT_R32G32_SFLOAT;
+		} else if (size == 3) {
+			formats[i] = VK_FORMAT_R32G32B32_SFLOAT;
+		} else if (size == 4) {
+			formats[i] = VK_FORMAT_R32G32B32A32_SFLOAT;
+		}
+	}
+
+	VKLShaderCreateInfo shaderCreateInfo;
+	memset(&shaderCreateInfo, 0, sizeof(VKLShaderCreateInfo));
+	shaderCreateInfo.shaderPaths = shaderPaths;
+	shaderCreateInfo.shaderStages = stages;
+	shaderCreateInfo.shaderCount = 2;
+	shaderCreateInfo.vertexInputAttributeStride = createInfo->vertexAttribDesc->stride;
+	shaderCreateInfo.vertexInputAttributesCount = createInfo->vertexAttribDesc->count;
+	shaderCreateInfo.vertexInputAttributeOffsets = createInfo->vertexAttribDesc->offsets;
+	shaderCreateInfo.vertexInputAttributeFormats = formats;
+
+	vklCreateShader(vkCTX->device, &shader->shader, &shaderCreateInfo);
+
+	VKLPipelineCreateInfo pipelineCreateInfo;
+	memset(&pipelineCreateInfo, 0, sizeof(VKLPipelineCreateInfo));
+	pipelineCreateInfo.shader = shader->shader;
+	pipelineCreateInfo.renderPass = vkCTX->swapChain->renderPass;
+	pipelineCreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	pipelineCreateInfo.cullMode = VK_CULL_MODE_NONE;
+	pipelineCreateInfo.extent.width = vkCTX->swapChain->width;
+	pipelineCreateInfo.extent.height = vkCTX->swapChain->height;
+
+	vklCreateGraphicsPipeline(vkCTX->device, &shader->pipeline, &pipelineCreateInfo);
+
+	return shader;
 }
 
 void rzvkBindShader(RZRenderContext* ctx, RZShader* shader) {
-
+	VKCTX* vkCTX = (VKCTX*)ctx->ctx;
+	VKShader* vkShader = (VKShader*)shader;
+	vkCTX->device->pvkCmdBindPipeline(vkCTX->cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkShader->pipeline->pipeline);
 }
 
 void rzvkDestroyShader(RZRenderContext* ctx, RZShader* shader) {
@@ -107,7 +164,8 @@ void rzvkDestroyShader(RZRenderContext* ctx, RZShader* shader) {
 }
 
 void rzvkDraw(RZRenderContext* ctx, uint32_t firstVertex, uint32_t vertexCount) {
-	
+	VKCTX* vkCTX = (VKCTX*)ctx->ctx;
+	vkCTX->device->pvkCmdDraw(vkCTX->cmdBuffer, vertexCount, 1, firstVertex, 0);
 }
 
 void rzvkLoadPFN(RZRenderContext* ctx) {
