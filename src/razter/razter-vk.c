@@ -11,6 +11,10 @@ typedef struct VKCTX {
 	VkCommandBuffer cmdBuffer;
 } VKCTX;
 
+typedef struct VKBuffer {
+	VKLBuffer* buffer;
+} VKBuffer;
+
 void rzvkInit(RZRenderContext* ctx) {
 	ctx->ctx = (VKCTX*)malloc(sizeof(VKCTX));
 }
@@ -38,6 +42,12 @@ void rzvkClear(RZRenderContext* ctx) {
 
 	vklClearScreen(vkCTX->swapChain);
 	vklBeginRenderRecording(vkCTX->swapChain, vkCTX->cmdBuffer);
+
+	VkViewport viewport = { 0, 0, vkCTX->swapChain->width, vkCTX->swapChain->height, 0, 1 };
+	VkRect2D scissor = { 0, 0, vkCTX->swapChain->width, vkCTX->swapChain->height };
+	
+	vkCTX->device->pvkCmdSetViewport(vkCTX->cmdBuffer, 0, 1, &viewport);
+	vkCTX->device->pvkCmdSetScissor(vkCTX->cmdBuffer, 0, 1, &scissor);
 }
 
 void rzvkSetClearColor(RZRenderContext* ctx, float r, float g, float b, float a) {
@@ -53,64 +63,68 @@ void rzvkSwap(RZRenderContext* ctx) {
 	vklSwapBuffers(vkCTX->swapChain);
 }
 
+RZBuffer* rzvkAllocateBuffer(RZRenderContext* ctx, RZBufferCreateInfo* createInfo, void* data, size_t size) {
+	VKCTX* vkCTX = (VKCTX*)ctx->ctx;
+
+	VKBuffer* buffer = malloc(sizeof(VKBuffer));
+
+	if (createInfo->type == RZ_BUFFER_TYPE_DYNAMIC) {
+		vklCreateBuffer(vkCTX->device, &buffer->buffer, VK_FALSE, size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+		vklWriteToMemory(vkCTX->device, buffer->buffer->memory, data, size);
+	} else if (createInfo->type == RZ_BUFFER_TYPE_STATIC) {
+		vklCreateStagedBuffer(vkCTX->devCon, &buffer->buffer, data, size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+	}
+	
+	return buffer;
+}
+
+void rzvkUpdateBuffer(RZRenderContext* ctx, RZBuffer* buffer, void* data, size_t size) {
+
+}
+
+void rzvkBindBuffer(RZRenderContext* ctx, RZBuffer* buffer) {
+	VKCTX* vkCTX = (VKCTX*)ctx->ctx;
+	VKBuffer* vkBuff = (VKBuffer*)buffer;
+
+	VkDeviceSize offsets = 0;
+	vkCTX->device->pvkCmdBindVertexBuffers(vkCTX->cmdBuffer, 0, 1, &vkBuff->buffer->buffer, &offsets);
+}
+
+void rzvkFreeBuffer(RZRenderContext* ctx, RZBuffer* buffer) {
+
+}
+
+RZShader* rzvkCreateShader(RZRenderContext* ctx, RZShaderCreateInfo* createInfo) {
+
+}
+
+void rzvkBindShader(RZRenderContext* ctx, RZShader* shader) {
+
+}
+
+void rzvkDestroyShader(RZRenderContext* ctx, RZShader* shader) {
+
+}
+
+void rzvkDraw(RZRenderContext* ctx, uint32_t firstVertex, uint32_t vertexCount) {
+	
+}
+
 void rzvkLoadPFN(RZRenderContext* ctx) {
 	ctx->init = rzvkInit;
 	ctx->createWindow = rzvkCreateWindow;
 	ctx->clear = rzvkClear;
 	ctx->setClearColor = rzvkSetClearColor;
 	ctx->swap = rzvkSwap;
+
+	ctx->allocBuffer = rzvkAllocateBuffer;
+	ctx->updateBuffer = rzvkUpdateBuffer;
+	ctx->bindBuffer = rzvkBindBuffer;
+	ctx->freeBuffer = rzvkFreeBuffer;
+
+	ctx->createShader = rzvkCreateShader;
+	ctx->bindShader = rzvkBindShader;
+	ctx->destroyShader = rzvkDestroyShader;
+
+	ctx->draw = rzvkDraw;
 }
-
-/*
-typedef struct VKCTX {
-	VKLInstance* instance;
-	VKLSurface* surface;
-	VKLDevice* device;
-	VKLDeviceGraphicsContext* devCon;
-	VKLSwapChain* swapChain;
-	VkCommandBuffer cmdBuffer;
-} VKCTX;
-
-RZVKRenderContext::RZVKRenderContext() {
-	m_ctx = (VKCTX*)malloc(sizeof(VKCTX));
-}
-
-GLFWwindow* RZVKRenderContext::createWindow(int width, int height, const char* title) {
-	VKCTX* ctx = (VKCTX*)m_ctx;
-
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	GLFWwindow* window = glfwCreateWindow(800, 600, "Razter Test", NULL, NULL);
-
-	vklCreateInstance(&ctx->instance, NULL, 0, NULL);
-	vklCreateGLFWSurface(ctx->instance, &ctx->surface, window);
-	VKLDeviceGraphicsContext** deviceContexts;
-	vklCreateDevice(ctx->instance, &ctx->device, &ctx->surface, 1, &deviceContexts, 0, NULL);
-	ctx->devCon = deviceContexts[0];
-	vklCreateSwapChain(ctx->devCon, &ctx->swapChain, VK_TRUE);
-
-	vklAllocateCommandBuffer(ctx->devCon, &ctx->cmdBuffer, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
-
-	vklSetClearColor(ctx->swapChain, 1.0f, 0.0f, 1.0f, 1.0f);
-
-	return window;
-}
-
-void RZVKRenderContext::clear() {
-	VKCTX* ctx = (VKCTX*)m_ctx;
-
-	vklClearScreen(ctx->swapChain);
-
-	vklBeginRenderRecording(ctx->swapChain, ctx->cmdBuffer);
-}
-
-void RZVKRenderContext::swap() {
-	VKCTX* ctx = (VKCTX*)m_ctx;
-
-	vklEndRenderRecording(ctx->swapChain, ctx->cmdBuffer);
-
-	vklRenderRecording(ctx->swapChain, ctx->cmdBuffer);
-
-	vklSwapBuffers(ctx->swapChain);
-}
-
-*/
