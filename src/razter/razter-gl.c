@@ -10,6 +10,7 @@ typedef struct GLCTX {
 typedef struct GLBuffer {
 	GLuint vao;
 	GLuint vbo;
+	uint32_t count;
 } GLBuffer;
 
 typedef struct GLShader {
@@ -34,6 +35,8 @@ GLFWwindow* rzglCreateWindow(RZRenderContext* ctx, int width, int height, const 
 	GLFWwindow* window = glfwCreateWindow(width, height, title, NULL, NULL);
 	glfwMakeContextCurrent(window);
 
+	glfwSwapInterval(1);
+
 	gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
 	glCTX->window = window;
@@ -57,6 +60,8 @@ void rzglSwap(RZRenderContext* ctx) {
 RZBuffer* rzglAllocateBuffer(RZRenderContext* ctx, RZBufferCreateInfo* createInfo, void* data, size_t size) {
 	GLBuffer* buffer = malloc(sizeof(GLBuffer));
 
+	buffer->count = createInfo->vertexAttribDesc->count;
+
 	glGenVertexArrays(1, &buffer->vao);
 	glBindVertexArray(buffer->vao);
 
@@ -69,15 +74,19 @@ RZBuffer* rzglAllocateBuffer(RZRenderContext* ctx, RZBufferCreateInfo* createInf
 		glBufferData(GL_ARRAY_BUFFER, size, data, GL_DYNAMIC_DRAW);
 	}
 
-	for (uint32_t i = 0; i < createInfo->vertexAttribDesc->count;i++) {
+	for (uint32_t i = 0; i < buffer->count;i++) {
 		glVertexAttribPointer(i, 
 			createInfo->vertexAttribDesc->sizes[i], 
 			GL_FLOAT, GL_FALSE, 
 			createInfo->vertexAttribDesc->stride,
 			createInfo->vertexAttribDesc->offsets[i]);
 	}
-
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	
+	for (uint32_t i = 0; i < buffer->count; i++) {
+		glEnableVertexAttribArray(i);
+	}
+	
 	glBindVertexArray(0);
 
 	return buffer;
@@ -91,8 +100,6 @@ void rzglBindBuffer(RZRenderContext* ctx, RZBuffer* buffer) {
 	GLBuffer* glBuff = (GLBuffer*)buffer;
 
 	glBindVertexArray(glBuff->vao);
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
 }
 
 void rzglFreeBuffer(RZRenderContext* ctx, RZBuffer* buffer) {
