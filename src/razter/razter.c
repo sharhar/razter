@@ -48,7 +48,7 @@ RZRenderContext* rzCreateRenderContext(RZPlatform type) {
 	}
 #ifdef __APPLE__
 	else if (type == RZ_PLATFORM_METAL) {
-		rzmtlLoadPFN(ctx);
+		rzmtLoadPFN(ctx);
 	}
 #endif
 	else {

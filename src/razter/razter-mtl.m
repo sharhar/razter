@@ -1,12 +1,3 @@
-//
-//  razter-mtl.m
-//  razter
-//
-//  Created by Shahar Sandhaus on 5/23/17.
-//
-//
-
-
 #include <razter/razter.h>
 
 #define GLFW_EXPOSE_NATIVE_COCOA
@@ -15,60 +6,56 @@
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
 #import <QuartzCore/CAMetalLayer.h>
-#import <QuartzCore/QuartzCore.h>
 
-typedef struct MTLCTX {
+typedef struct MTCTX {
 	NSWindow* window;
 	id<MTLDevice> device;
 	CAMetalLayer* metalLayer;
-	id<MTLLibrary> library;
 	id<MTLCommandQueue> commandQueue;
-	id<MTLFunction> vertexProgram;
-	id<MTLFunction> fragmentProgram;
-	id<MTLRenderPipelineState> pipelineState;
 	id<CAMetalDrawable> drawable;
-	id<MTLCommandBuffer> cmdBuffer;
+	id<MTLCommandBuffer> commandBuffer;
 	id<MTLRenderCommandEncoder> renderEncoder;
 	
 	float clearR, clearG, clearB, clearA;
-} MTLCTX;
+} MTCTX;
 
-void rzmtlInit(RZRenderContext* ctx) {
-	ctx->ctx = (MTLCTX*)malloc(sizeof(MTLCTX));
+typedef struct MTBuffer {
+	id<MTLBuffer> buffer;
+} MTBuffer;
+
+typedef struct MTShader {
+	id<MTLLibrary> library;
+	id<MTLFunction> vertexProgram;
+	id<MTLFunction> fragmentProgram;
+	id<MTLRenderPipelineState> pipelineState;
+} MTShader;
+
+
+void rzmtInit(RZRenderContext* ctx) {
+	ctx->ctx = (MTCTX*)malloc(sizeof(MTCTX));
 }
 
-GLFWwindow* rzmtlCreateWindow(RZRenderContext* ctx, int width, int height, const char* title) {
-	MTLCTX* mtlCTX = (MTLCTX*)ctx->ctx;
+GLFWwindow* rzmtCreateWindow(RZRenderContext* ctx, int width, int height, const char* title) {
+	MTCTX* mtCTX = (MTCTX*)ctx->ctx;
 	
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	GLFWwindow* window = glfwCreateWindow(width, height, title, NULL, NULL);
 	
-	mtlCTX->window = glfwGetCocoaWindow(window);
+	mtCTX->window = glfwGetCocoaWindow(window);
 	
-	mtlCTX->device = MTLCreateSystemDefaultDevice();
-	mtlCTX->metalLayer = [CAMetalLayer layer];
-	mtlCTX->metalLayer.device = mtlCTX->device;
-	mtlCTX->metalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm;
-	mtlCTX->metalLayer.frame = CGRectMake(0, 0, width, height);
+	mtCTX->device = MTLCreateSystemDefaultDevice();
+	mtCTX->metalLayer = [CAMetalLayer layer];
+	mtCTX->metalLayer.device = mtCTX->device;
+	mtCTX->metalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm;
+	mtCTX->metalLayer.frame = CGRectMake(0, 0, width, height);
 	
-	[mtlCTX->metalLayer setPosition:CGPointMake([[mtlCTX->window contentView] frame].size.width/2,
-								   [[mtlCTX->window contentView]frame].size.height/2)];
+	[mtCTX->metalLayer setPosition:CGPointMake([[mtCTX->window contentView] frame].size.width/2,
+								   [[mtCTX->window contentView]frame].size.height/2)];
 	
-	[[mtlCTX->window contentView] setLayer:mtlCTX->metalLayer];
-	[[mtlCTX->window contentView] setWantsLayer:YES];
+	[[mtCTX->window contentView] setLayer:mtCTX->metalLayer];
+	[[mtCTX->window contentView] setWantsLayer:YES];
 	
-	mtlCTX->library = [mtlCTX->device newDefaultLibrary];
-	mtlCTX->commandQueue = [mtlCTX->device newCommandQueue];
-	
-	mtlCTX->vertexProgram = [mtlCTX->library newFunctionWithName:@"vertex_function"];
-	mtlCTX->fragmentProgram = [mtlCTX->library newFunctionWithName:@"fragment_function"];
-	
-	MTLRenderPipelineDescriptor* pipelineStateDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
-	[pipelineStateDescriptor setVertexFunction:mtlCTX->vertexProgram];
-	[pipelineStateDescriptor setFragmentFunction:mtlCTX->fragmentProgram];
-	pipelineStateDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
-	
-	mtlCTX->pipelineState = [mtlCTX->device newRenderPipelineStateWithDescriptor:pipelineStateDescriptor error:nil];
+	mtCTX->commandQueue = [mtCTX->device newCommandQueue];
 	
 	/*
 	static float quadVertexData[] =
@@ -87,91 +74,143 @@ GLFWwindow* rzmtlCreateWindow(RZRenderContext* ctx, int width, int height, const
 	return window;
 }
 
-void rzmtlClear(RZRenderContext* ctx) {
-	MTLCTX* mtlCTX = (MTLCTX*)ctx->ctx;
+void rzmtClear(RZRenderContext* ctx) {
+	MTCTX* mtCTX = (MTCTX*)ctx->ctx;
 	
-	mtlCTX->drawable = [mtlCTX->metalLayer nextDrawable];
+	mtCTX->drawable = [mtCTX->metalLayer nextDrawable];
 	
-	mtlCTX->cmdBuffer = [mtlCTX->commandQueue commandBuffer];
+	mtCTX->commandBuffer = [mtCTX->commandQueue commandBuffer];
 	
 	MTLRenderPassDescriptor* renderPassDescriptor = [MTLRenderPassDescriptor renderPassDescriptor];
-	renderPassDescriptor.colorAttachments[0].texture = mtlCTX->drawable.texture;
+	renderPassDescriptor.colorAttachments[0].texture = mtCTX->drawable.texture;
 	renderPassDescriptor.colorAttachments[0].loadAction = MTLLoadActionClear;
-	renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColorMake(mtlCTX->clearR, mtlCTX->clearG, mtlCTX->clearB, mtlCTX->clearA);
+	renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColorMake(mtCTX->clearR, mtCTX->clearG, mtCTX->clearB, mtCTX->clearA);
 	renderPassDescriptor.colorAttachments[0].storeAction = MTLStoreActionStore;
 	
-	mtlCTX->renderEncoder = [mtlCTX->cmdBuffer renderCommandEncoderWithDescriptor:renderPassDescriptor];
+	mtCTX->renderEncoder = [mtCTX->commandBuffer renderCommandEncoderWithDescriptor:renderPassDescriptor];
 }
 
-void rzmtlSetClearColor(RZRenderContext* ctx, float r, float g, float b, float a) {
-	MTLCTX* mtlCTX = (MTLCTX*)ctx->ctx;
+void rzmtSetClearColor(RZRenderContext* ctx, float r, float g, float b, float a) {
+	MTCTX* mtCTX = (MTCTX*)ctx->ctx;
 	
-	mtlCTX->clearR = r;
-	mtlCTX->clearG = g;
-	mtlCTX->clearB = b;
-	mtlCTX->clearA = a;
+	mtCTX->clearR = r;
+	mtCTX->clearG = g;
+	mtCTX->clearB = b;
+	mtCTX->clearA = a;
 }
 
-void rzmtlSwap(RZRenderContext* ctx) {
-	MTLCTX* mtlCTX = (MTLCTX*)ctx->ctx;
+void rzmtSwap(RZRenderContext* ctx) {
+	MTCTX* mtCTX = (MTCTX*)ctx->ctx;
 	
-	[mtlCTX->renderEncoder endEncoding];
+	[mtCTX->renderEncoder endEncoding];
 	
-	[mtlCTX->cmdBuffer presentDrawable:mtlCTX->drawable];
+	[mtCTX->commandBuffer presentDrawable:mtCTX->drawable];
 	
-	[mtlCTX->cmdBuffer commit];
+	[mtCTX->commandBuffer commit];
 }
 
-RZBuffer* rzmtlAllocateBuffer(RZRenderContext* ctx, RZBufferCreateInfo* createInfo, void* data, size_t size) {
-	RZBuffer* buffer = malloc(sizeof(RZBuffer));
+RZBuffer* rzmtAllocateBuffer(RZRenderContext* ctx, RZBufferCreateInfo* createInfo, void* data, size_t size) {
+	MTCTX* mtCTX = (MTCTX*)ctx->ctx;
+	MTBuffer* buffer = malloc(sizeof(MTBuffer));
+	
+	buffer->buffer = [mtCTX->device newBufferWithBytes:data length:size options:MTLResourceOptionCPUCacheModeDefault];
 	
 	return buffer;
 }
 
-void rzmtlUpdateBuffer(RZRenderContext* ctx, RZBuffer* buffer, void* data, size_t size) {
+void rzmtUpdateBuffer(RZRenderContext* ctx, RZBuffer* buffer, void* data, size_t size) {
 	
 }
 
-void rzmtlBindBuffer(RZRenderContext* ctx, RZBuffer* buffer) {
+void rzmtBindBuffer(RZRenderContext* ctx, RZBuffer* buffer) {
+	MTCTX* mtCTX = (MTCTX*)ctx->ctx;
+	MTBuffer* mtBuffer = (MTBuffer*)buffer;
+	
+	[mtCTX->renderEncoder setVertexBuffer:mtBuffer->buffer offset:0 atIndex:0];
+}
+
+void rzmtFreeBuffer(RZRenderContext* ctx, RZBuffer* buffer) {
 	
 }
 
-void rzmtlFreeBuffer(RZRenderContext* ctx, RZBuffer* buffer) {
+RZShader* rzmtCreateShader(RZRenderContext* ctx, RZShaderCreateInfo* createInfo) {
+	MTCTX* mtCTX = (MTCTX*)ctx->ctx;
+	
+	MTShader* shader = malloc(sizeof(MTShader));
+	
+	shader->library = [mtCTX->device newDefaultLibrary];
+	
+	shader->vertexProgram = [shader->library newFunctionWithName:@(createInfo->vertData)];
+	shader->fragmentProgram = [shader->library newFunctionWithName:@(createInfo->fragData)];
+	
+	MTLVertexDescriptor* vertexDescriptor = [MTLVertexDescriptor vertexDescriptor];
+	
+	for (uint32_t i = 0; i < createInfo->vertexAttribDesc->count;i++) {
+		uint32_t size = createInfo->vertexAttribDesc->sizes[i];
+		size_t offset = createInfo->vertexAttribDesc->offsets[i];
+		
+		if (size == 1) {
+			vertexDescriptor.attributes[i].format = MTLVertexFormatFloat;
+		} else if (size == 2) {
+			vertexDescriptor.attributes[i].format = MTLVertexFormatFloat2;
+		} else if (size == 3) {
+			vertexDescriptor.attributes[i].format = MTLVertexFormatFloat3;
+		} else if (size == 4) {
+			vertexDescriptor.attributes[i].format = MTLVertexFormatFloat4;
+		}
+		
+		vertexDescriptor.attributes[i].bufferIndex = 0;
+		vertexDescriptor.attributes[i].offset = offset;
+	}
+ 
+	vertexDescriptor.layouts[0].stride = createInfo->vertexAttribDesc->stride;
+	vertexDescriptor.layouts[0].stepFunction = MTLVertexStepFunctionPerVertex;
+	
+	MTLRenderPipelineDescriptor* pipelineStateDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
+	[pipelineStateDescriptor setVertexFunction:shader->vertexProgram];
+	[pipelineStateDescriptor setFragmentFunction:shader->fragmentProgram];
+	pipelineStateDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
+	[pipelineStateDescriptor setVertexDescriptor:vertexDescriptor];
+	
+	
+	shader->pipelineState = [mtCTX->device newRenderPipelineStateWithDescriptor:pipelineStateDescriptor error:nil];
+
+	return shader;
+}
+
+void rzmtBindShader(RZRenderContext* ctx, RZShader* shader) {
+	MTCTX* mtCTX = (MTCTX*)ctx->ctx;
+	MTShader* mtShader = (MTShader*)shader;
+	
+	[mtCTX->renderEncoder setRenderPipelineState:mtShader->pipelineState];
+}
+
+void rzmtDestroyShader(RZRenderContext* ctx, RZShader* shader) {
 	
 }
 
-RZShader* rzmtlCreateShader(RZRenderContext* ctx, RZShaderCreateInfo* createInfo) {
-	return NULL;
-}
-
-void rzmtlBindShader(RZRenderContext* ctx, RZShader* shader) {
+void rzmtDraw(RZRenderContext* ctx, uint32_t firstVertex, uint32_t vertexCount) {
+	MTCTX* mtCTX = (MTCTX*)ctx->ctx;
 	
-}
-
-void rzmtlDestroyShader(RZRenderContext* ctx, RZShader* shader) {
-	
-}
-
-void rzmtlDraw(RZRenderContext* ctx, uint32_t firstVertex, uint32_t vertexCount) {
-	
+	[mtCTX->renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:firstVertex vertexCount:vertexCount];
 }
 
 
-void rzmtlLoadPFN(RZRenderContext* ctx) {
-	ctx->init = rzmtlInit;
-	ctx->createWindow = rzmtlCreateWindow;
-	ctx->clear = rzmtlClear;
-	ctx->setClearColor = rzmtlSetClearColor;
-	ctx->swap = rzmtlSwap;
+void rzmtLoadPFN(RZRenderContext* ctx) {
+	ctx->init = rzmtInit;
+	ctx->createWindow = rzmtCreateWindow;
+	ctx->clear = rzmtClear;
+	ctx->setClearColor = rzmtSetClearColor;
+	ctx->swap = rzmtSwap;
 	
-	ctx->allocBuffer = rzmtlAllocateBuffer;
-	ctx->updateBuffer = rzmtlUpdateBuffer;
-	ctx->bindBuffer = rzmtlBindBuffer;
-	ctx->freeBuffer = rzmtlFreeBuffer;
+	ctx->allocBuffer = rzmtAllocateBuffer;
+	ctx->updateBuffer = rzmtUpdateBuffer;
+	ctx->bindBuffer = rzmtBindBuffer;
+	ctx->freeBuffer = rzmtFreeBuffer;
 	
-	ctx->createShader = rzmtlCreateShader;
-	ctx->bindShader = rzmtlBindShader;
-	ctx->destroyShader = rzmtlDestroyShader;
+	ctx->createShader = rzmtCreateShader;
+	ctx->bindShader = rzmtBindShader;
+	ctx->destroyShader = rzmtDestroyShader;
 	
-	ctx->draw = rzmtlDraw;
+	ctx->draw = rzmtDraw;
 }

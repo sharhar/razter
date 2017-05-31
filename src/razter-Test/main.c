@@ -47,6 +47,9 @@ int main() {
 	} else if (platform == RZ_PLATFORM_OPENGL) {
 		shaderCreateInfo.vertData = "res/shader.vert";
 		shaderCreateInfo.fragData = "res/shader.frag";
+	} else if (platform == RZ_PLATFORM_METAL) {
+		shaderCreateInfo.vertData = "vertex_function";
+		shaderCreateInfo.fragData = "fragment_function";
 	}
 	
 

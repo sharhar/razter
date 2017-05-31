@@ -87,7 +87,7 @@ void rzglLoadPFN(RZRenderContext* ctx);
 void rzvkLoadPFN(RZRenderContext* ctx);
 	
 #ifdef __APPLE__
-void rzmtlLoadPFN(RZRenderContext* ctx);
+void rzmtLoadPFN(RZRenderContext* ctx);
 #endif
 
 RZRenderContext* rzCreateRenderContext(RZPlatform type);
