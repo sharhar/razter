@@ -29,6 +29,8 @@ typedef struct MTLCTX {
 	id<CAMetalDrawable> drawable;
 	id<MTLCommandBuffer> cmdBuffer;
 	id<MTLRenderCommandEncoder> renderEncoder;
+	
+	float clearR, clearG, clearB, clearA;
 } MTLCTX;
 
 void rzmtlInit(RZRenderContext* ctx) {
@@ -95,14 +97,19 @@ void rzmtlClear(RZRenderContext* ctx) {
 	MTLRenderPassDescriptor* renderPassDescriptor = [MTLRenderPassDescriptor renderPassDescriptor];
 	renderPassDescriptor.colorAttachments[0].texture = mtlCTX->drawable.texture;
 	renderPassDescriptor.colorAttachments[0].loadAction = MTLLoadActionClear;
-	renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColorMake(1, 0, 1, 1);
+	renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColorMake(mtlCTX->clearR, mtlCTX->clearG, mtlCTX->clearB, mtlCTX->clearA);
 	renderPassDescriptor.colorAttachments[0].storeAction = MTLStoreActionStore;
 	
 	mtlCTX->renderEncoder = [mtlCTX->cmdBuffer renderCommandEncoderWithDescriptor:renderPassDescriptor];
 }
 
 void rzmtlSetClearColor(RZRenderContext* ctx, float r, float g, float b, float a) {
+	MTLCTX* mtlCTX = (MTLCTX*)ctx->ctx;
 	
+	mtlCTX->clearR = r;
+	mtlCTX->clearG = g;
+	mtlCTX->clearB = b;
+	mtlCTX->clearA = a;
 }
 
 void rzmtlSwap(RZRenderContext* ctx) {
@@ -133,6 +140,23 @@ void rzmtlFreeBuffer(RZRenderContext* ctx, RZBuffer* buffer) {
 	
 }
 
+RZShader* rzmtlCreateShader(RZRenderContext* ctx, RZShaderCreateInfo* createInfo) {
+	return NULL;
+}
+
+void rzmtlBindShader(RZRenderContext* ctx, RZShader* shader) {
+	
+}
+
+void rzmtlDestroyShader(RZRenderContext* ctx, RZShader* shader) {
+	
+}
+
+void rzmtlDraw(RZRenderContext* ctx, uint32_t firstVertex, uint32_t vertexCount) {
+	
+}
+
+
 void rzmtlLoadPFN(RZRenderContext* ctx) {
 	ctx->init = rzmtlInit;
 	ctx->createWindow = rzmtlCreateWindow;
@@ -144,4 +168,10 @@ void rzmtlLoadPFN(RZRenderContext* ctx) {
 	ctx->updateBuffer = rzmtlUpdateBuffer;
 	ctx->bindBuffer = rzmtlBindBuffer;
 	ctx->freeBuffer = rzmtlFreeBuffer;
+	
+	ctx->createShader = rzmtlCreateShader;
+	ctx->bindShader = rzmtlBindShader;
+	ctx->destroyShader = rzmtlDestroyShader;
+	
+	ctx->draw = rzmtlDraw;
 }
