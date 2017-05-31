@@ -1,6 +1,7 @@
 #include <glad/glad.h>
 #include <razter/razter.h>
 #include <stdio.h>
+#include <math.h>
 
 typedef struct GLCTX {
 	GLFWwindow* window;
@@ -30,16 +31,16 @@ GLFWwindow* rzglCreateWindow(RZRenderContext* ctx, int width, int height, const 
 
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
+	
 	GLFWwindow* window = glfwCreateWindow(width, height, title, NULL, NULL);
 	glfwMakeContextCurrent(window);
-
-	glfwSwapInterval(1);
-
+	
 	gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
+	glfwSwapInterval(1);
+	
 	glCTX->window = window;
-
+	
 	return window;
 }
 
@@ -54,6 +55,11 @@ void rzglSetClearColor(RZRenderContext* ctx, float r, float g, float b, float a)
 void rzglSwap(RZRenderContext* ctx) {
 	GLCTX* glCTX = (GLCTX*)ctx->ctx;
 	glfwSwapBuffers(glCTX->window);
+	
+	//GLenum error = GL_NO_ERROR;
+	//while((error = glGetError()) != GL_NO_ERROR) {
+	//	printf("GLError = %d\n", error);
+	//}
 }
 
 RZBuffer* rzglAllocateBuffer(RZRenderContext* ctx, RZBufferCreateInfo* createInfo, void* data, size_t size) {
@@ -97,7 +103,7 @@ void rzglUpdateBuffer(RZRenderContext* ctx, RZBuffer* buffer, void* data, size_t
 
 void rzglBindBuffer(RZRenderContext* ctx, RZBuffer* buffer) {
 	GLBuffer* glBuff = (GLBuffer*)buffer;
-
+	
 	glBindVertexArray(glBuff->vao);
 }
 
@@ -171,8 +177,9 @@ RZShader* rzglCreateShader(RZRenderContext* ctx, RZShaderCreateInfo* createInfo)
 
 void rzglBindShader(RZRenderContext* ctx, RZShader* shader) {
 	GLShader* glShader = (GLShader*)shader;
-
+	
 	glUseProgram(glShader->shaderProgram);
+	
 }
 
 void rzglDestroyShader(RZRenderContext* ctx, RZShader* shader) {

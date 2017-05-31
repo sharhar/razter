@@ -80,8 +80,6 @@ int main() {
 
 		rzClear(ctx);
 		
-		
-
 		rzBindBuffer(ctx, buffer);
 		rzBindShader(ctx, shader);
 		rzDraw(ctx, 0, 3);

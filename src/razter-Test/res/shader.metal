@@ -16,6 +16,7 @@ typedef struct {
 typedef struct {
 	float4 position [[position]];
 	half4  color;
+	float2 uv;
 } VertexOut;
 
 vertex VertexOut vertex_function(VertexIn vert [[stage_in]],
@@ -24,9 +25,10 @@ vertex VertexOut vertex_function(VertexIn vert [[stage_in]],
 	VertexOut out;
 	out.position = float4(vert.position.xy, 0.0, 1.0);//uniforms.rotation_matrix * vertices[vid].position;
 	out.color = half4(vert.color[0], vert.color[1], vert.color[2], 1.0);
+	out.uv = vert.uv;
 	return out;
 }
 
 fragment half4 fragment_function(VertexOut in [[stage_in]]) {
-	return in.color;
+	return half4(in.uv[0], in.uv[1], 0.0, 1.0);
 }

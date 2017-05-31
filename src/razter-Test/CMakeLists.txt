@@ -6,7 +6,7 @@ file(GLOB_RECURSE RAZTER_TEST_C *.c)
 if(APPLE)
 
 	file(GLOB_RECURSE RAZTER_TEST_M *.m)
-	file(GLOB_RECURSE RAZTER_TEST_METAL *.metal)
+	#file(GLOB_RECURSE RAZTER_TEST_METAL *.metal)
 
 	add_executable(
 		razter-Test 
@@ -14,11 +14,11 @@ if(APPLE)
 		${RAZTER_TEST_H} 
 		${RAZTER_TEST_C} 
 		${RAZTER_TEST_M} 
-		${RAZTER_TEST_METAL}
+		#${RAZTER_TEST_METAL}
 		"${CMAKE_CURRENT_SOURCE_DIR}/res"
 	)
 
-	set_source_files_properties(${RAZTER_TEST_METAL} PROPERTIES LANGUAGE METAL)	
+	#set_source_files_properties(${RAZTER_TEST_METAL} PROPERTIES LANGUAGE METAL)	
 
 	SET_SOURCE_FILES_PROPERTIES(
 		"${CMAKE_CURRENT_SOURCE_DIR}/res"

@@ -138,7 +138,10 @@ RZShader* rzmtCreateShader(RZRenderContext* ctx, RZShaderCreateInfo* createInfo)
 	
 	MTShader* shader = malloc(sizeof(MTShader));
 	
-	shader->library = [mtCTX->device newDefaultLibrary];
+	size_t size;
+	char* source = rzReadFileFromPath("res/shader.metal", &size);
+	
+	shader->library = [mtCTX->device newLibraryWithSource:@(source) options:nil error:nil];
 	
 	shader->vertexProgram = [shader->library newFunctionWithName:@(createInfo->vertData)];
 	shader->fragmentProgram = [shader->library newFunctionWithName:@(createInfo->fragData)];
