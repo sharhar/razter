@@ -1,6 +1,6 @@
 #include <glad/glad.h>
 #include <razter/razter.h>
-#include <malloc.h>
+#include <memory.h>
 
 typedef struct GLCTX {
 	GLFWwindow* window;

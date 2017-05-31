@@ -1,5 +1,5 @@
 #include <razter/razter.h>
-#include <malloc.h>
+#include <memory.h>
 
 RZRenderContext* rzCreateRenderContext(RZPlatform type) {
 	RZRenderContext* ctx = malloc(sizeof(RZRenderContext));
@@ -12,7 +12,13 @@ RZRenderContext* rzCreateRenderContext(RZPlatform type) {
 		} else {
 			return NULL;
 		}
-	} else {
+	}
+#ifdef __APPLE__
+	else if (type == RZ_PLATFORM_METAL) {
+		rzmtlLoadPFN(ctx);
+	}
+#endif
+	else {
 		return NULL;
 	}
 

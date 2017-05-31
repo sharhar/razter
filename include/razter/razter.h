@@ -10,13 +10,30 @@ extern "C" {
 typedef enum RZPlatform {
 	RZ_PLATFORM_OPENGL,
 	RZ_PLATFORM_VULKAN
+	
+#ifdef __APPLE__
+	,RZ_PLATFORM_METAL
+#endif
+
 } RZPlatform;
 
 struct RZRenderContext;
-struct RZBuffer;
-
 typedef struct RZRenderContext RZRenderContext;
-typedef struct RZBuffer RZBuffer;
+	
+typedef enum RZBufferUsage {
+	RZ_BUFFER_USAGE_STATIC,
+	RZ_BUFFER_USAGE_DYNAMIC
+} RZBufferUsage;
+	
+typedef struct RZBufferCreateInfo {
+	RZBufferUsage usage;
+} RZBufferCreateInfo;
+	
+typedef struct RZBuffer {
+	void* data;
+	size_t size;
+} RZBuffer;
+
 
 typedef struct RZRenderContext {
 	void* ctx;
@@ -33,6 +50,10 @@ typedef struct RZRenderContext {
 
 void rzglLoadPFN(RZRenderContext* ctx);
 void rzvkLoadPFN(RZRenderContext* ctx);
+	
+#ifdef __APPLE__
+void rzmtlLoadPFN(RZRenderContext* ctx);
+#endif
 
 RZRenderContext* rzCreateRenderContext(RZPlatform type);
 
@@ -40,20 +61,6 @@ GLFWwindow* rzCreateWindow(RZRenderContext* ctx, int width, int height, const ch
 void rzClear(RZRenderContext* ctx);
 void rzSetClearColor(RZRenderContext* ctx, float r, float g, float b, float a);
 void rzSwap(RZRenderContext* ctx);
-
-typedef enum RZBufferUsage {
-	RZ_BUFFER_USAGE_STATIC,
-	RZ_BUFFER_USAGE_DYNAMIC
-} RZBufferUsage;
-
-typedef struct RZBufferCreateInfo {
-	RZBufferUsage usage;
-} RZBufferCreateInfo;
-
-typedef struct RZBuffer {
-	void* data;
-	size_t size;
-} RZBuffer;
 
 RZBuffer* rzAllocateBuffer(RZRenderContext* ctx, RZBufferCreateInfo* createInfo, void* data, size_t size);
 void rzUpdateBuffer(RZRenderContext* ctx, RZBuffer* buffer, void* data, size_t size);
