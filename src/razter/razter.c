@@ -1,5 +1,4 @@
 #include <razter/razter.h>
-#include <malloc.h>
 #include <stdio.h>
 
 char* rzReadFileFromPath(char *filename, size_t* size) {
@@ -12,15 +11,15 @@ char* rzReadFileFromPath(char *filename, size_t* size) {
 		string_size = ftell(handler);
 		rewind(handler);
 
-		buffer = (char*)malloc_c(sizeof(char) * (string_size + 1));
+		buffer = (char*)malloc(sizeof(char) * (string_size + 1));
 
 		read_size = fread(buffer, sizeof(char), string_size, handler);
 
 		buffer[string_size] = '\0';
 
 		if (string_size != read_size) {
-			printf("Error occured while reading file!\nstring_size = %d\nread_size = %d\n\n", string_size, read_size);
-			free_c(buffer);
+			printf("Error occured while reading file!\nstring_size = %zu\nread_size = %zu\n\n", string_size, read_size);
+			free(buffer);
 			buffer = NULL;
 		}
 
@@ -46,7 +45,13 @@ RZRenderContext* rzCreateRenderContext(RZPlatform type) {
 		} else {
 			return NULL;
 		}
-	} else {
+	}
+#ifdef __APPLE__
+	else if (type == RZ_PLATFORM_METAL) {
+		rzmtLoadPFN(ctx);
+	}
+#endif
+	else {
 		return NULL;
 	}
 

@@ -1,5 +1,5 @@
 #include <razter/razter.h>
-#include <malloc.h>
+#include <memory.h>
 #include <VKL/VKL.h>
 
 typedef struct VKCTX {
@@ -49,7 +49,9 @@ void rzvkClear(RZRenderContext* ctx) {
 	vklBeginRenderRecording(vkCTX->swapChain, vkCTX->cmdBuffer);
 
 	VkViewport viewport = { 0, 0, vkCTX->swapChain->width, vkCTX->swapChain->height, 0, 1 };
-	VkRect2D scissor = { 0, 0, vkCTX->swapChain->width, vkCTX->swapChain->height };
+	VkRect2D scissor = {
+		{0, 0},
+		{vkCTX->swapChain->width, vkCTX->swapChain->height} };
 	
 	vkCTX->device->pvkCmdSetViewport(vkCTX->cmdBuffer, 0, 1, &viewport);
 	vkCTX->device->pvkCmdSetScissor(vkCTX->cmdBuffer, 0, 1, &scissor);

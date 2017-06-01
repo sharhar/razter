@@ -4,7 +4,7 @@
 int main() {
 	glfwInit();
 
-	RZPlatform platform = RZ_PLATFORM_OPENGL;
+	RZPlatform platform = RZ_PLATFORM_METAL;
 
 	RZRenderContext* ctx = rzCreateRenderContext(platform);
 
@@ -47,6 +47,9 @@ int main() {
 	} else if (platform == RZ_PLATFORM_OPENGL) {
 		shaderCreateInfo.vertData = "res/shader.vert";
 		shaderCreateInfo.fragData = "res/shader.frag";
+	} else if (platform == RZ_PLATFORM_METAL) {
+		shaderCreateInfo.vertData = "vertex_function";
+		shaderCreateInfo.fragData = "fragment_function";
 	}
 	
 
@@ -76,7 +79,7 @@ int main() {
 		}
 
 		rzClear(ctx);
-
+		
 		rzBindBuffer(ctx, buffer);
 		rzBindShader(ctx, shader);
 		rzDraw(ctx, 0, 3);

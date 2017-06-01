@@ -6,6 +6,7 @@ extern "C" {
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
+#include <stdlib.h>
 
 typedef enum RZBool {
 	RZ_FALSE = 0x00,
@@ -15,6 +16,11 @@ typedef enum RZBool {
 typedef enum RZPlatform {
 	RZ_PLATFORM_OPENGL,
 	RZ_PLATFORM_VULKAN
+	
+#ifdef __APPLE__
+	,RZ_PLATFORM_METAL
+#endif
+
 } RZPlatform;
 
 typedef enum RZBufferUsage {
@@ -79,6 +85,10 @@ typedef struct RZRenderContext {
 
 void rzglLoadPFN(RZRenderContext* ctx);
 void rzvkLoadPFN(RZRenderContext* ctx);
+	
+#ifdef __APPLE__
+void rzmtLoadPFN(RZRenderContext* ctx);
+#endif
 
 RZRenderContext* rzCreateRenderContext(RZPlatform type);
 
