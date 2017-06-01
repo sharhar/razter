@@ -7,7 +7,6 @@ extern "C" {
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-
 typedef enum RZBool {
 	RZ_FALSE = 0x00,
 	RZ_TRUE = 0x01
@@ -53,6 +52,7 @@ typedef struct RZShaderCreateInfo {
 
 typedef void RZBuffer;
 typedef void RZShader;
+typedef void RZUniform;
 
 struct RZRenderContext;
 typedef struct RZRenderContext RZRenderContext;
