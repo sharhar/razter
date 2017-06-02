@@ -47,6 +47,34 @@ typedef struct RZBufferCreateInfo {
 	RZVertexAttributeDescription* vertexAttribDesc;
 } RZBufferCreateInfo;
 
+typedef enum RZUniformType {
+	RZ_UNIFORM_TYPE_BUFFER			= 0x01,
+	RZ_UNIFORM_TYPE_SAMPLED_IMAGE	= 0x02,
+	RZ_UNIFORM_TYPE_FLOAT			= 0x03,
+	RZ_UNIFORM_TYPE_FLOAT_2			= 0x04,
+	RZ_UNIFORM_TYPE_FLOAT_3			= 0x05,
+	RZ_UNIFORM_TYPE_FLOAT_4			= 0x06,
+	RZ_UNIFORM_TYPE_INT				= 0x07,
+	RZ_UNIFORM_TYPE_INT_2			= 0x08,
+	RZ_UNIFORM_TYPE_INT_3			= 0x09,
+	RZ_UNIFORM_TYPE_INT_4			= 0x0a,
+	RZ_UNIFORM_TYPE_MATRIX_4		= 0x0b,
+	RZ_UNIFORM_TYPE_MATRIX_3		= 0x0c
+} RZUniformType;
+
+typedef enum RZUniformStage {
+	RZ_UNIFORM_STAGE_VERTEX = 0x01,
+	RZ_UNIFORM_STAGE_FRAGMENT = 0x02
+} RZUniformStage;
+
+typedef struct RZUniformDescriptor {
+	RZUniformType type;
+	RZUniformStage stage;
+	uint32_t index;
+	const char* name;
+	size_t bufferSize;
+} RZUniformDescriptor;
+
 typedef struct RZShaderCreateInfo {
 	char* vertData;
 	size_t vertSize;
@@ -54,6 +82,8 @@ typedef struct RZShaderCreateInfo {
 	size_t fragSize;
 	RZVertexAttributeDescription* vertexAttribDesc;
 	RZBool isPath;
+	RZUniformDescriptor* descriptors;
+	uint32_t descriptorCount;
 } RZShaderCreateInfo;
 
 typedef void RZBuffer;
@@ -81,6 +111,11 @@ typedef struct RZRenderContext {
 	void (*destroyShader)(RZRenderContext* ctx, RZShader* shader);
 
 	void(*draw)(RZRenderContext* ctx, uint32_t firstVertex, uint32_t vertexCount);
+
+	RZUniform* (*createUniform)(RZRenderContext* ctx, RZShader* shader);
+	void (*bindUniform)(RZRenderContext* ctx, RZShader* shader, RZUniform* uniform);
+	void (*uniformData)(RZRenderContext* ctx, RZUniform* uniform, uint32_t index, void* data);
+	void (*destroyUniform)(RZRenderContext* ctx, RZUniform* uniform);
 } RZRenderContext;
 
 void rzglLoadPFN(RZRenderContext* ctx);
@@ -107,6 +142,11 @@ void rzBindShader(RZRenderContext* ctx, RZShader* shader);
 void rzDestroyShader(RZRenderContext* ctx, RZShader* shader);
 
 void rzDraw(RZRenderContext* ctx, uint32_t firstVertex, uint32_t vertexCount);
+
+RZUniform* rzCreateUniform(RZRenderContext* ctx, RZShader* shader);
+void rzBindUniform(RZRenderContext* ctx, RZShader* shader, RZUniform* uniform);
+void rzUniformData(RZRenderContext* ctx, RZUniform* uniform, uint32_t index, void* data);
+void rzDestroyUniform(RZRenderContext* ctx, RZUniform* uniform);
 
 char* rzReadFileFromPath(char *filename, size_t* size);
 

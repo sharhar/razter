@@ -4,7 +4,7 @@
 int main() {
 	glfwInit();
 
-	RZPlatform platform = RZ_PLATFORM_METAL;
+	RZPlatform platform = RZ_PLATFORM_OPENGL;
 
 	RZRenderContext* ctx = rzCreateRenderContext(platform);
 
@@ -35,11 +35,26 @@ int main() {
 
 	RZBuffer* buffer = rzAllocateBuffer(ctx, &bufferCreateInfo, verts, sizeof(float) * 3 * 7);
 
+	RZUniformDescriptor uniformDescriptors[2];
+	uniformDescriptors[0].index = 0;
+	uniformDescriptors[0].name = "view";
+	uniformDescriptors[0].stage = RZ_UNIFORM_STAGE_VERTEX;
+	uniformDescriptors[0].type = RZ_UNIFORM_TYPE_MATRIX_4;
+	uniformDescriptors[0].bufferSize = sizeof(float) * 16;
+
+	uniformDescriptors[1].index = 1;
+	uniformDescriptors[1].name = "proj";
+	uniformDescriptors[1].stage = RZ_UNIFORM_STAGE_VERTEX;
+	uniformDescriptors[1].type = RZ_UNIFORM_TYPE_MATRIX_4;
+	uniformDescriptors[1].bufferSize = sizeof(float) * 16;
+
 	RZShaderCreateInfo shaderCreateInfo;
 	shaderCreateInfo.isPath = RZ_TRUE;
 	shaderCreateInfo.vertexAttribDesc = &vertexAttribDesc;
 	shaderCreateInfo.vertSize = 0;
 	shaderCreateInfo.fragSize = 0;
+	shaderCreateInfo.descriptors = uniformDescriptors;
+	shaderCreateInfo.descriptorCount = 2;
 
 	if (platform == RZ_PLATFORM_VULKAN) {
 		shaderCreateInfo.vertData = "res/shader-vert.spv";
@@ -47,13 +62,34 @@ int main() {
 	} else if (platform == RZ_PLATFORM_OPENGL) {
 		shaderCreateInfo.vertData = "res/shader.vert";
 		shaderCreateInfo.fragData = "res/shader.frag";
-	} else if (platform == RZ_PLATFORM_METAL) {
+	}
+#ifdef __APPLE__
+	else if (platform == RZ_PLATFORM_METAL) {
 		shaderCreateInfo.vertData = "vertex_function";
 		shaderCreateInfo.fragData = "fragment_function";
 	}
+#endif
 	
 
 	RZShader* shader = rzCreateShader(ctx, &shaderCreateInfo);
+	RZUniform* uniform = rzCreateUniform(ctx, shader);
+
+	float view[] = {
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1
+	};
+
+	float proj[] = {
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1
+	};
+
+	rzUniformData(ctx, uniform, 0, view);
+	rzUniformData(ctx, uniform, 1, proj);
 
 	double ct = glfwGetTime();
 	double dt = ct;
@@ -78,10 +114,16 @@ int main() {
 			accDT = 0;
 		}
 
+		view[12] = glfwGetTime()/10.0f;
+		rzUniformData(ctx, uniform, 0, view);
+
 		rzClear(ctx);
 		
 		rzBindBuffer(ctx, buffer);
 		rzBindShader(ctx, shader);
+
+		rzBindUniform(ctx, shader, uniform);
+
 		rzDraw(ctx, 0, 3);
 
 		rzSwap(ctx);

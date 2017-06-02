@@ -108,3 +108,19 @@ void rzDestroyShader(RZRenderContext* ctx, RZShader* shader) {
 void rzDraw(RZRenderContext* ctx, uint32_t firstVertex, uint32_t vertexCount) {
 	ctx->draw(ctx, firstVertex, vertexCount);
 }
+
+RZUniform* rzCreateUniform(RZRenderContext* ctx, RZShader* shader) {
+	return ctx->createUniform(ctx, shader);
+}
+
+void rzBindUniform(RZRenderContext* ctx, RZShader* shader, RZUniform* uniform) {
+	ctx->bindUniform(ctx, shader, uniform);
+}
+
+void rzUniformData(RZRenderContext* ctx, RZUniform* uniform, uint32_t index, void* data) {
+	ctx->uniformData(ctx, uniform, index, data);
+}
+
+void rzDestroyUniform(RZRenderContext* ctx, RZUniform* uniform) {
+	ctx->destroyUniform(ctx, uniform);
+}
