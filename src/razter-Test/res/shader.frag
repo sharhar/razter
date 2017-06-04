@@ -1,19 +1,14 @@
-#version 400 core
+#version 420 core
 #extension GL_ARB_separate_shader_objects : enable
 
 layout( location = 0 ) in struct frag_in {
-	vec2 uv;
-	vec3 color;
+    vec2 uv;
 } IN;
 
-uniform sampler2D tex;
-
-uniform vec4 color;
-uniform float width;
-uniform float edge;
+layout ( binding = 2 ) uniform sampler2D tex;
 
 layout (location = 0) out vec4 outColor;
 
 void main(void) {
-	outColor = vec4(IN.uv.xy, 0.0, 1.0);
+	outColor = texture(tex, IN.uv);
 }

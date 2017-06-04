@@ -5,7 +5,7 @@
 int main() {
 	glfwInit();
 
-	RZPlatform platform = RZ_PLATFORM_OPENGL;
+	RZPlatform platform = RZ_PLATFORM_VULKAN;
 
 	RZRenderContext* ctx = rzCreateRenderContext(platform);
 
@@ -14,17 +14,21 @@ int main() {
 	rzSetClearColor(ctx, 0.0f, 1.0f, 1.0f, 1.0f);
 
 	float verts[] = {
-		-0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
-		 0.0f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-		 0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f
+		-0.5f, -0.5f, 0.0f, 1.0f,
+		 0.5f,  0.5f, 1.0f, 0.0f,
+		 0.5f, -0.5f, 1.0f, 1.0f,
+
+		-0.5f, -0.5f, 0.0f, 1.0f,
+		 0.5f,  0.5f, 1.0f, 0.0f,
+		-0.5f,  0.5f, 0.0f, 0.0f
 	};
 
-	size_t offsets[] = { 0, sizeof(float) * 2, sizeof(float) * 5 };
-	size_t stride = sizeof(float) * 7;
-	uint32_t sizes[] = { 2, 3, 2 };
+	size_t offsets[] = { 0, sizeof(float) * 2};
+	size_t stride = sizeof(float) * 4;
+	uint32_t sizes[] = { 2, 2 };
 
 	RZVertexAttributeDescription vertexAttribDesc;
-	vertexAttribDesc.count = 3;
+	vertexAttribDesc.count = 2;
 	vertexAttribDesc.stride = stride;
 	vertexAttribDesc.offsets = offsets;
 	vertexAttribDesc.sizes = sizes;
@@ -34,7 +38,7 @@ int main() {
 	bufferCreateInfo.type = RZ_BUFFER_TYPE_STATIC;
 	bufferCreateInfo.vertexAttribDesc = &vertexAttribDesc;
 
-	RZBuffer* buffer = rzAllocateBuffer(ctx, &bufferCreateInfo, verts, sizeof(float) * 3 * 7);
+	RZBuffer* buffer = rzAllocateBuffer(ctx, &bufferCreateInfo, verts, sizeof(float) * 6 * 4);
 
 	RZUniformDescriptor uniformDescriptors[3];
 	uniformDescriptors[0].index = 0;
@@ -66,9 +70,6 @@ int main() {
 	if (platform == RZ_PLATFORM_VULKAN) {
 		shaderCreateInfo.vertData = "res/shader-vert.spv";
 		shaderCreateInfo.fragData = "res/shader-frag.spv";
-	} else if (platform == RZ_PLATFORM_OPENGL) {
-		shaderCreateInfo.vertData = "res/shader.vert";
-		shaderCreateInfo.fragData = "res/shader.frag";
 	}
 #ifdef __APPLE__
 	else if (platform == RZ_PLATFORM_METAL) {
@@ -149,7 +150,7 @@ int main() {
 
 		rzBindUniform(ctx, shader, uniform);
 
-		rzDraw(ctx, 0, 3);
+		rzDraw(ctx, 0, 6);
 
 		rzSwap(ctx);
 	}

@@ -37,9 +37,7 @@ char* rzReadFileFromPath(char *filename, size_t* size) {
 RZRenderContext* rzCreateRenderContext(RZPlatform type) {
 	RZRenderContext* ctx = malloc(sizeof(RZRenderContext));
 
-	if (type == RZ_PLATFORM_OPENGL) {
-		rzglLoadPFN(ctx);
-	} else if (type == RZ_PLATFORM_VULKAN) {
+	if (type == RZ_PLATFORM_VULKAN) {
 		if (glfwVulkanSupported()) {
 			rzvkLoadPFN(ctx);
 		} else {

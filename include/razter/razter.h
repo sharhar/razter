@@ -14,13 +14,11 @@ typedef enum RZBool {
 } RZBool;
 
 typedef enum RZPlatform {
-	RZ_PLATFORM_OPENGL,
-	RZ_PLATFORM_VULKAN
-	
 #ifdef __APPLE__
-	,RZ_PLATFORM_METAL
+	RZ_PLATFORM_METAL,
 #endif
 
+	RZ_PLATFORM_VULKAN
 } RZPlatform;
 
 typedef enum RZBufferUsage {
@@ -146,7 +144,6 @@ typedef struct RZRenderContext {
 	void(*destroyTexture)(RZInternalContext* ctx, RZTexture* texture);
 } RZRenderContext;
 
-void rzglLoadPFN(RZRenderContext* ctx);
 void rzvkLoadPFN(RZRenderContext* ctx);
 	
 #ifdef __APPLE__
