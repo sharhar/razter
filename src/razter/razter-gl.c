@@ -35,6 +35,10 @@ typedef struct GLUniform {
 	uint32_t variableCount;
 } GLUniform;
 
+typedef struct GLTexture {
+	GLuint tex;
+} GLTexture;
+
 void rzglInit(RZRenderContext* ctx) {
 	ctx->ctx = (GLCTX*)malloc(sizeof(GLCTX));
 }
@@ -244,6 +248,32 @@ void rzglDestroyUniform(GLCTX* ctx, GLUniform* uniform) {
 
 }
 
+RZTexture* rzglCreateTexture(GLCTX* ctx, RZTextureCreateInfo* createInfo) {
+	GLTexture* texture = malloc_c(sizeof(GLTexture));
+
+	glGenTextures(1, &texture->tex);
+
+	glBindTexture(GL_TEXTURE_2D, &texture->tex);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	GLint format = GL_RGB;
+	GLenum type = GL_FLOAT;
+
+	glTexImage2D(GL_TEXTURE_2D, 0, format, createInfo->width, createInfo->height, 0, format, type, createInfo->data);
+
+
+	return texture;
+}
+
+void rzglDestroyTexture(GLCTX* ctx, RZTexture* texture) {
+
+}
+
 void rzglLoadPFN(RZRenderContext* ctx) {
 	ctx->init = rzglInit;
 	ctx->createWindow = rzglCreateWindow;
@@ -266,4 +296,7 @@ void rzglLoadPFN(RZRenderContext* ctx) {
 	ctx->bindUniform = rzglBindUniform;
 	ctx->uniformData = rzglUniformData;
 	ctx->destroyUniform = rzglDestroyUniform;
+
+	ctx->createTexture = rzglCreateTexture;
+	ctx->destroyTexture = rzglDestroyTexture;
 }

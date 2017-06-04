@@ -5,7 +5,7 @@
 int main() {
 	glfwInit();
 
-	RZPlatform platform = RZ_PLATFORM_VULKAN;
+	RZPlatform platform = RZ_PLATFORM_OPENGL;
 
 	RZRenderContext* ctx = rzCreateRenderContext(platform);
 
