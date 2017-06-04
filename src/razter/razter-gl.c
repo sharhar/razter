@@ -39,9 +39,7 @@ void rzglInit(RZRenderContext* ctx) {
 	ctx->ctx = (GLCTX*)malloc(sizeof(GLCTX));
 }
 
-GLFWwindow* rzglCreateWindow(RZRenderContext* ctx, int width, int height, const char* title) {
-	GLCTX* glCTX = (GLCTX*)ctx->ctx;
-
+GLFWwindow* rzglCreateWindow(GLCTX* ctx, int width, int height, const char* title) {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
@@ -55,25 +53,24 @@ GLFWwindow* rzglCreateWindow(RZRenderContext* ctx, int width, int height, const 
 
 	glfwSwapInterval(1);
 	
-	glCTX->window = window;
+	ctx->window = window;
 	
 	return window;
 }
 
-void rzglClear(RZRenderContext* ctx) {
+void rzglClear(GLCTX* ctx) {
 	glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void rzglSetClearColor(RZRenderContext* ctx, float r, float g, float b, float a) {
+void rzglSetClearColor(GLCTX* ctx, float r, float g, float b, float a) {
 	glClearColor(r, g, b, a);
 }
 
-void rzglSwap(RZRenderContext* ctx) {
-	GLCTX* glCTX = (GLCTX*)ctx->ctx;
-	glfwSwapBuffers(glCTX->window);
+void rzglSwap(GLCTX* ctx) {
+	glfwSwapBuffers(ctx->window);
 }
 
-RZBuffer* rzglAllocateBuffer(RZRenderContext* ctx, RZBufferCreateInfo* createInfo, void* data, size_t size) {
+RZBuffer* rzglAllocateBuffer(GLCTX* ctx, RZBufferCreateInfo* createInfo, void* data, size_t size) {
 	GLBuffer* buffer = malloc(sizeof(GLBuffer));
 
 	buffer->count = createInfo->vertexAttribDesc->count;
@@ -108,21 +105,19 @@ RZBuffer* rzglAllocateBuffer(RZRenderContext* ctx, RZBufferCreateInfo* createInf
 	return buffer;
 }
 
-void rzglUpdateBuffer(RZRenderContext* ctx, RZBuffer* buffer, void* data, size_t size) {
+void rzglUpdateBuffer(GLCTX* ctx, GLBuffer* buffer, void* data, size_t size) {
 	
 }
 
-void rzglBindBuffer(RZRenderContext* ctx, RZBuffer* buffer) {
-	GLBuffer* glBuff = (GLBuffer*)buffer;
-	
-	glBindVertexArray(glBuff->vao);
+void rzglBindBuffer(GLCTX* ctx, GLBuffer* buffer) {
+	glBindVertexArray(buffer->vao);
 }
 
-void rzglFreeBuffer(RZRenderContext* ctx, RZBuffer* buffer) {
+void rzglFreeBuffer(GLCTX* ctx, GLBuffer* buffer) {
 
 }
 
-RZShader* rzglCreateShader(RZRenderContext* ctx, RZShaderCreateInfo* createInfo) {
+RZShader* rzglCreateShader(GLCTX* ctx, RZShaderCreateInfo* createInfo) {
 	GLShader* shader = malloc(sizeof(GLShader));
 
 	shader->uniformCount = createInfo->descriptorCount;
@@ -198,61 +193,54 @@ RZShader* rzglCreateShader(RZRenderContext* ctx, RZShaderCreateInfo* createInfo)
 	return shader;
 }
 
-void rzglBindShader(RZRenderContext* ctx, RZShader* shader) {
-	GLShader* glShader = (GLShader*)shader;
-	
-	glUseProgram(glShader->shaderProgram);
+void rzglBindShader(GLCTX* ctx, GLShader* shader) {
+	glUseProgram(shader->shaderProgram);
 }
 
-void rzglDestroyShader(RZRenderContext* ctx, RZShader* shader) {
+void rzglDestroyShader(GLCTX* ctx, GLShader* shader) {
 
 }
 
-void rzglDraw(RZRenderContext* ctx, uint32_t firstVertex, uint32_t vertexCount) {
+void rzglDraw(GLCTX* ctx, uint32_t firstVertex, uint32_t vertexCount) {
 	glDrawArrays(GL_TRIANGLES, firstVertex, vertexCount);
 }
 
-RZUniform* rzglCreateUniform(RZRenderContext* ctx, RZShader* shader) {
-	GLShader* glShader = (GLShader*)shader;
+RZUniform* rzglCreateUniform(GLCTX* ctx, GLShader* shader) {
 	GLUniform* uniform = malloc_c(sizeof(GLUniform));
 
-	uniform->variableCount = glShader->uniformCount;
+	uniform->variableCount = shader->uniformCount;
 	uniform->variables = malloc_c(sizeof(GLUniformVariable) * uniform->variableCount);
 
 	for (uint32_t i = 0; i < uniform->variableCount; i++) {
 		uniform->variables[i].data = NULL;
-		uniform->variables[i].location = glShader->locations[i];
-		uniform->variables[i].type = glShader->descriptors[i].type;
-		uniform->variables[i].size = glShader->descriptors[i].bufferSize;
+		uniform->variables[i].location = shader->locations[i];
+		uniform->variables[i].type = shader->descriptors[i].type;
+		uniform->variables[i].size = shader->descriptors[i].bufferSize;
 	}
 
 	return uniform;
 }
 
-void rzglBindUniform(RZRenderContext* ctx, RZShader* shader, RZUniform* uniform) {
-	GLUniform* glUniform = (GLUniform*)uniform;
-
-	for (uint32_t i = 0; i < glUniform->variableCount;i++) {
-		RZUniformType type = glUniform->variables[i].type;
+void rzglBindUniform(GLCTX* ctx, GLShader* shader, GLUniform* uniform) {
+	for (uint32_t i = 0; i < uniform->variableCount;i++) {
+		RZUniformType type = uniform->variables[i].type;
 
 		if (type == RZ_UNIFORM_TYPE_MATRIX_4) {
-			glUniformMatrix4fv(glUniform->variables[i].location, 1, GL_FALSE, glUniform->variables[i].data);
+			glUniformMatrix4fv(uniform->variables[i].location, 1, GL_FALSE, uniform->variables[i].data);
 		}
 	}
 }
 
-void rzglUniformData(RZRenderContext* ctx, RZUniform* uniform, uint32_t index, void* data) {
-	GLUniform* glUniform = (GLUniform*)uniform;
-
-	if (glUniform->variables[index].data != NULL) {
-		free_c(glUniform->variables[index].data);
+void rzglUniformData(GLCTX* ctx, GLUniform* uniform, uint32_t index, void* data) {
+	if (uniform->variables[index].data != NULL) {
+		free_c(uniform->variables[index].data);
 	}
 
-	glUniform->variables[index].data = malloc_c(glUniform->variables[index].size);
-	memcpy(glUniform->variables[index].data, data, glUniform->variables[index].size);
+	uniform->variables[index].data = malloc_c(uniform->variables[index].size);
+	memcpy(uniform->variables[index].data, data, uniform->variables[index].size);
 }
 
-void rzglDestroyUniform(RZRenderContext* ctx, RZUniform* uniform) {
+void rzglDestroyUniform(GLCTX* ctx, GLUniform* uniform) {
 
 }
 

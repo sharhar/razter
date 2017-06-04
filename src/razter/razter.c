@@ -60,67 +60,75 @@ RZRenderContext* rzCreateRenderContext(RZPlatform type) {
 }
 
 GLFWwindow* rzCreateWindow(RZRenderContext* ctx, int width, int height, const char* title) {
-	GLFWwindow* window = ctx->createWindow(ctx, width, height, title);
-	ctx->setClearColor(ctx, 0.0f, 0.0f, 0.0f, 1.0f);
+	GLFWwindow* window = ctx->createWindow(ctx->ctx, width, height, title);
+	ctx->setClearColor(ctx->ctx, 0.0f, 0.0f, 0.0f, 1.0f);
 	return window;
 }
 
 void rzClear(RZRenderContext* ctx) {
-	ctx->clear(ctx);
+	ctx->clear(ctx->ctx);
 }
 
 void rzSetClearColor(RZRenderContext* ctx, float r, float g, float b, float a) {
-	ctx->setClearColor(ctx, r, g, b, a);
+	ctx->setClearColor(ctx->ctx, r, g, b, a);
 }
 
 void rzSwap(RZRenderContext* ctx) {
-	ctx->swap(ctx);
+	ctx->swap(ctx->ctx);
 }
 
 RZBuffer* rzAllocateBuffer(RZRenderContext* ctx, RZBufferCreateInfo* createInfo, void* data, size_t size) {
-	return ctx->allocBuffer(ctx, createInfo, data, size);
+	return ctx->allocBuffer(ctx->ctx, createInfo, data, size);
 }
 
 void rzUpdateBuffer(RZRenderContext* ctx, RZBuffer* buffer, void* data, size_t size) {
-	ctx->updateBuffer(ctx, buffer, data, size);
+	ctx->updateBuffer(ctx->ctx, buffer, data, size);
 }
 
 void rzBindBuffer(RZRenderContext* ctx, RZBuffer* buffer) {
-	ctx->bindBuffer(ctx, buffer);
+	ctx->bindBuffer(ctx->ctx, buffer);
 }
 
 void rzFreeBuffer(RZRenderContext* ctx, RZBuffer* buffer) {
-	ctx->freeBuffer(ctx, buffer);
+	ctx->freeBuffer(ctx->ctx, buffer);
 }
 
 RZShader* rzCreateShader(RZRenderContext* ctx, RZShaderCreateInfo* createInfo) {
-	return ctx->createShader(ctx, createInfo);
+	return ctx->createShader(ctx->ctx, createInfo);
 }
 
 void rzBindShader(RZRenderContext* ctx, RZShader* shader) {
-	ctx->bindShader(ctx, shader);
+	ctx->bindShader(ctx->ctx, shader);
 }
 
 void rzDestroyShader(RZRenderContext* ctx, RZShader* shader) {
-	ctx->destroyShader(ctx, shader);
+	ctx->destroyShader(ctx->ctx, shader);
 }
 
 void rzDraw(RZRenderContext* ctx, uint32_t firstVertex, uint32_t vertexCount) {
-	ctx->draw(ctx, firstVertex, vertexCount);
+	ctx->draw(ctx->ctx, firstVertex, vertexCount);
 }
 
 RZUniform* rzCreateUniform(RZRenderContext* ctx, RZShader* shader) {
-	return ctx->createUniform(ctx, shader);
+	return ctx->createUniform(ctx->ctx, shader);
 }
 
 void rzBindUniform(RZRenderContext* ctx, RZShader* shader, RZUniform* uniform) {
-	ctx->bindUniform(ctx, shader, uniform);
+	ctx->bindUniform(ctx->ctx, shader, uniform);
 }
 
 void rzUniformData(RZRenderContext* ctx, RZUniform* uniform, uint32_t index, void* data) {
-	ctx->uniformData(ctx, uniform, index, data);
+	ctx->uniformData(ctx->ctx, uniform, index, data);
 }
 
 void rzDestroyUniform(RZRenderContext* ctx, RZUniform* uniform) {
-	ctx->destroyUniform(ctx, uniform);
+	ctx->destroyUniform(ctx->ctx, uniform);
+}
+
+RZTexture* rzCreateTexture(RZRenderContext* ctx, RZTextureCreateInfo* createInfo) {
+	return ctx->createTexture(ctx->ctx, createInfo);
+}
+
+void rzDestroyTexture(RZRenderContext* ctx, RZTexture* texture) {
+	return ctx->destroyTexture(ctx->ctx, texture);
 }

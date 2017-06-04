@@ -86,36 +86,64 @@ typedef struct RZShaderCreateInfo {
 	uint32_t descriptorCount;
 } RZShaderCreateInfo;
 
+typedef enum RZColorSize {
+	RZ_COLOR_SIZE_FLOAT_32 = 0x01,
+	RZ_COLOR_SIZE_INT_32 = 0x02,
+	RZ_COLOR_SIZE_INT_8 = 0x03,
+} RZColorSize;
+
+typedef enum RZColorFormat {
+	RZ_COLOR_FORMAT_R = 0x01,
+	RZ_COLOR_FORMAT_RG = 0x02,
+	RZ_COLOR_FORMAT_RGB = 0x03,
+	RZ_COLOR_FORMAT_RGBA = 0x04,
+} RZColorFormat;
+
+typedef struct RZTextureCreateInfo {
+	uint32_t width;
+	uint32_t height;
+	RZColorSize colorSize;
+	RZColorFormat colorFormat;
+	void* data;
+} RZTextureCreateInfo;
+
+typedef void RZInternalContext;
 typedef void RZBuffer;
 typedef void RZShader;
 typedef void RZUniform;
+typedef void RZTexture;
 
 struct RZRenderContext;
 typedef struct RZRenderContext RZRenderContext;
 
 typedef struct RZRenderContext {
-	void* ctx;
-	GLFWwindow* (*createWindow)(RZRenderContext* ctx, int width, int height, const char* title);
-	void (*init)(RZRenderContext* ctx);
-	void (*setClearColor)(RZRenderContext* ctx, float r, float g, float b, float a);
-	void (*clear)(RZRenderContext* ctx);
-	void (*swap)(RZRenderContext* ctx);
+	RZInternalContext* ctx;
 
-	RZBuffer* (*allocBuffer)(RZRenderContext* ctx, RZBufferCreateInfo* createInfo, void* data, size_t size);
-	void (*updateBuffer)(RZRenderContext* ctx, RZBuffer* buffer, void* data, size_t size);
-	void (*bindBuffer)(RZRenderContext* ctx, RZBuffer* buffer);
-	void (*freeBuffer)(RZRenderContext* ctx, RZBuffer* buffer);
+	void(*init)(RZRenderContext* ctx);
 
-	RZShader* (*createShader)(RZRenderContext* ctx, RZShaderCreateInfo* createInfo);
-	void (*bindShader)(RZRenderContext* ctx, RZShader* shader);
-	void (*destroyShader)(RZRenderContext* ctx, RZShader* shader);
+	GLFWwindow* (*createWindow)(RZInternalContext* ctx, int width, int height, const char* title);
+	void (*setClearColor)(RZInternalContext* ctx, float r, float g, float b, float a);
+	void (*clear)(RZInternalContext* ctx);
+	void (*swap)(RZInternalContext* ctx);
 
-	void(*draw)(RZRenderContext* ctx, uint32_t firstVertex, uint32_t vertexCount);
+	RZBuffer* (*allocBuffer)(RZInternalContext* ctx, RZBufferCreateInfo* createInfo, void* data, size_t size);
+	void (*updateBuffer)(RZInternalContext* ctx, RZBuffer* buffer, void* data, size_t size);
+	void (*bindBuffer)(RZInternalContext* ctx, RZBuffer* buffer);
+	void (*freeBuffer)(RZInternalContext* ctx, RZBuffer* buffer);
 
-	RZUniform* (*createUniform)(RZRenderContext* ctx, RZShader* shader);
-	void (*bindUniform)(RZRenderContext* ctx, RZShader* shader, RZUniform* uniform);
-	void (*uniformData)(RZRenderContext* ctx, RZUniform* uniform, uint32_t index, void* data);
-	void (*destroyUniform)(RZRenderContext* ctx, RZUniform* uniform);
+	RZShader* (*createShader)(RZInternalContext* ctx, RZShaderCreateInfo* createInfo);
+	void (*bindShader)(RZInternalContext* ctx, RZShader* shader);
+	void (*destroyShader)(RZInternalContext* ctx, RZShader* shader);
+
+	void(*draw)(RZInternalContext* ctx, uint32_t firstVertex, uint32_t vertexCount);
+
+	RZUniform* (*createUniform)(RZInternalContext* ctx, RZShader* shader);
+	void (*bindUniform)(RZInternalContext* ctx, RZShader* shader, RZUniform* uniform);
+	void (*uniformData)(RZInternalContext* ctx, RZUniform* uniform, uint32_t index, void* data);
+	void (*destroyUniform)(RZInternalContext* ctx, RZUniform* uniform);
+
+	RZTexture* (*createTexture)(RZInternalContext* ctx, RZTextureCreateInfo* createInfo);
+	void(*destroyTexture)(RZInternalContext* ctx, RZTexture* texture);
 } RZRenderContext;
 
 void rzglLoadPFN(RZRenderContext* ctx);
@@ -147,6 +175,9 @@ RZUniform* rzCreateUniform(RZRenderContext* ctx, RZShader* shader);
 void rzBindUniform(RZRenderContext* ctx, RZShader* shader, RZUniform* uniform);
 void rzUniformData(RZRenderContext* ctx, RZUniform* uniform, uint32_t index, void* data);
 void rzDestroyUniform(RZRenderContext* ctx, RZUniform* uniform);
+
+RZTexture* rzCreateTexture(RZRenderContext* ctx, RZTextureCreateInfo* createInfo);
+void rzDestroyTexture(RZRenderContext* ctx, RZTexture* texture);
 
 char* rzReadFileFromPath(char *filename, size_t* size);
 

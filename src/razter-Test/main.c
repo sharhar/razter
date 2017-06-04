@@ -1,10 +1,11 @@
 #include <razter/razter.h>
 #include <stdio.h>
+#include <GLFW/glfw3native.h>
 
 int main() {
 	glfwInit();
 
-	RZPlatform platform = RZ_PLATFORM_OPENGL;
+	RZPlatform platform = RZ_PLATFORM_VULKAN;
 
 	RZRenderContext* ctx = rzCreateRenderContext(platform);
 
@@ -35,7 +36,7 @@ int main() {
 
 	RZBuffer* buffer = rzAllocateBuffer(ctx, &bufferCreateInfo, verts, sizeof(float) * 3 * 7);
 
-	RZUniformDescriptor uniformDescriptors[2];
+	RZUniformDescriptor uniformDescriptors[3];
 	uniformDescriptors[0].index = 0;
 	uniformDescriptors[0].name = "view";
 	uniformDescriptors[0].stage = RZ_UNIFORM_STAGE_VERTEX;
@@ -48,13 +49,19 @@ int main() {
 	uniformDescriptors[1].type = RZ_UNIFORM_TYPE_MATRIX_4;
 	uniformDescriptors[1].bufferSize = sizeof(float) * 16;
 
+	uniformDescriptors[2].index = 2;
+	uniformDescriptors[2].name = "tex";
+	uniformDescriptors[2].stage = RZ_UNIFORM_STAGE_FRAGMENT;
+	uniformDescriptors[2].type = RZ_UNIFORM_TYPE_SAMPLED_IMAGE;
+	uniformDescriptors[2].bufferSize = 0;
+
 	RZShaderCreateInfo shaderCreateInfo;
 	shaderCreateInfo.isPath = RZ_TRUE;
 	shaderCreateInfo.vertexAttribDesc = &vertexAttribDesc;
 	shaderCreateInfo.vertSize = 0;
 	shaderCreateInfo.fragSize = 0;
 	shaderCreateInfo.descriptors = uniformDescriptors;
-	shaderCreateInfo.descriptorCount = 2;
+	shaderCreateInfo.descriptorCount = 3;
 
 	if (platform == RZ_PLATFORM_VULKAN) {
 		shaderCreateInfo.vertData = "res/shader-vert.spv";
@@ -90,6 +97,24 @@ int main() {
 
 	rzUniformData(ctx, uniform, 0, view);
 	rzUniformData(ctx, uniform, 1, proj);
+
+	float imageData[] = {
+		1.0f, 0.0f, 0.0f,    0.0f, 1.0f, 0.0f,   0.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f,
+		1.0f, 0.3f, 0.3f,    0.3f, 1.0f, 0.3f,   0.3f, 0.3f, 1.0f,    0.3f, 0.3f, 0.3f,
+		1.0f, 0.5f, 0.5f,    0.5f, 1.0f, 0.5f,   0.5f, 0.5f, 1.0f,    0.5f, 0.5f, 0.5f,
+		1.0f, 0.8f, 0.8f,    0.8f, 1.0f, 0.8f,   0.8f, 0.8f, 1.0f,    0.8f, 0.8f, 0.8f
+	};
+
+	RZTextureCreateInfo textureCreateInfo;
+	textureCreateInfo.width = 4;
+	textureCreateInfo.height = 4;
+	textureCreateInfo.data = imageData;
+	textureCreateInfo.colorSize = RZ_COLOR_SIZE_FLOAT_32;
+	textureCreateInfo.colorFormat = RZ_COLOR_FORMAT_RGB;
+
+	RZTexture* texture = rzCreateTexture(ctx, &textureCreateInfo);
+
+	rzUniformData(ctx, uniform, 2, texture);
 
 	double ct = glfwGetTime();
 	double dt = ct;
