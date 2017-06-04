@@ -65,6 +65,8 @@ typedef struct RZShaderCreateInfo {
 	size_t vertSize;
 	char* fragData;
 	size_t fragSize;
+	char* vertFunction;
+	char* fragFunction;
 	RZVertexAttributeDescription* vertexAttribDesc;
 	RZBool isPath;
 	RZUniformDescriptor* descriptors;
@@ -91,7 +93,7 @@ typedef void RZBuffer;
 typedef void RZShader;
 typedef void RZUniform;
 typedef void RZTexture;
-
+	
 struct RZRenderContext;
 typedef struct RZRenderContext RZRenderContext;
 

@@ -2,7 +2,6 @@
 
 #define GLFW_EXPOSE_NATIVE_COCOA
 #include <GLFW/glfw3native.h>
-#import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
 #import <QuartzCore/CAMetalLayer.h>
 
@@ -23,7 +22,8 @@ typedef struct MTBuffer {
 } MTBuffer;
 
 typedef struct MTShader {
-	id<MTLLibrary> library;
+	id<MTLLibrary> vertLibrary;
+	id<MTLLibrary> fragLibrary;
 	id<MTLFunction> vertexProgram;
 	id<MTLFunction> fragmentProgram;
 	id<MTLRenderPipelineState> pipelineState;
@@ -129,13 +129,21 @@ RZShader* rzmtCreateShader(MTCTX* ctx, RZShaderCreateInfo* createInfo) {
 	shader->descriptors = malloc(sizeof(RZUniformDescriptor) * shader->descriptorCount);
 	memcpy(shader->descriptors, createInfo->descriptors, sizeof(RZUniformDescriptor) * shader->descriptorCount);
 	
-	size_t size;
-	char* source = rzReadFileFromPath("res/shader.metal", &size);
+	size_t vSize = createInfo->vertSize;
+	char* vertSource = createInfo->vertData;
+	size_t fSize = createInfo->fragSize;
+	char* fragSource = createInfo->fragData;
 	
-	shader->library = [ctx->device newLibraryWithSource:@(source) options:nil error:nil];
+	if(createInfo->isPath == RZ_TRUE) {
+		vertSource = rzReadFileFromPath(createInfo->vertData, &vSize);
+		fragSource = rzReadFileFromPath(createInfo->fragData, &fSize);
+	}
 	
-	shader->vertexProgram = [shader->library newFunctionWithName:@(createInfo->vertData)];
-	shader->fragmentProgram = [shader->library newFunctionWithName:@(createInfo->fragData)];
+	shader->vertLibrary = [ctx->device newLibraryWithSource:@(vertSource) options:nil error:nil];
+	shader->vertexProgram = [shader->vertLibrary newFunctionWithName:@(createInfo->vertFunction)];
+	
+	shader->fragLibrary = [ctx->device newLibraryWithSource:@(fragSource) options:nil error:nil];
+	shader->fragmentProgram = [shader->fragLibrary newFunctionWithName:@(createInfo->fragFunction)];
 	
 	MTLVertexDescriptor* vertexDescriptor = [MTLVertexDescriptor vertexDescriptor];
 	

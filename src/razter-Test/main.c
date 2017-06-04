@@ -69,8 +69,12 @@ int main() {
 	shaderCreateInfo.fragData = "res/shader-frag.spv";
 
 #ifdef __APPLE__
-	shaderCreateInfo.vertData = "vertex_function";
-	shaderCreateInfo.fragData = "fragment_function";
+	shaderCreateInfo.vertFunction = "vertex_function";
+	shaderCreateInfo.fragFunction = "fragment_function";
+	
+	shaderCreateInfo.vertData = "res/shader.metal";
+	shaderCreateInfo.fragData = "res/shader.metal";
+	
 #endif
 	
 
