@@ -252,7 +252,8 @@ RZTexture* rzvkCreateTexture(VKCTX* ctx, RZTextureCreateInfo* createInfo) {
 	textureCreateInfo.tiling = VK_IMAGE_TILING_LINEAR;
 	textureCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
 	textureCreateInfo.filter = VK_FILTER_NEAREST;
-
+	
+	/*
 	RZColorFormat format = createInfo->colorFormat;
 	RZColorSize size = createInfo->colorSize;
 
@@ -319,6 +320,7 @@ RZTexture* rzvkCreateTexture(VKCTX* ctx, RZTextureCreateInfo* createInfo) {
 			textureCreateInfo.colorCount = 4;
 		}
 	}
+	*/
 	
 
 	vklCreateStagedTexture(ctx->devCon, &texture->texture, &textureCreateInfo, createInfo->data);

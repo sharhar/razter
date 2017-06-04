@@ -14,10 +14,7 @@ typedef enum RZBool {
 } RZBool;
 
 typedef enum RZPlatform {
-#ifdef __APPLE__
 	RZ_PLATFORM_METAL,
-#endif
-
 	RZ_PLATFORM_VULKAN
 } RZPlatform;
 
@@ -47,17 +44,7 @@ typedef struct RZBufferCreateInfo {
 
 typedef enum RZUniformType {
 	RZ_UNIFORM_TYPE_BUFFER			= 0x01,
-	RZ_UNIFORM_TYPE_SAMPLED_IMAGE	= 0x02,
-	RZ_UNIFORM_TYPE_FLOAT			= 0x03,
-	RZ_UNIFORM_TYPE_FLOAT_2			= 0x04,
-	RZ_UNIFORM_TYPE_FLOAT_3			= 0x05,
-	RZ_UNIFORM_TYPE_FLOAT_4			= 0x06,
-	RZ_UNIFORM_TYPE_INT				= 0x07,
-	RZ_UNIFORM_TYPE_INT_2			= 0x08,
-	RZ_UNIFORM_TYPE_INT_3			= 0x09,
-	RZ_UNIFORM_TYPE_INT_4			= 0x0a,
-	RZ_UNIFORM_TYPE_MATRIX_4		= 0x0b,
-	RZ_UNIFORM_TYPE_MATRIX_3		= 0x0c
+	RZ_UNIFORM_TYPE_SAMPLED_IMAGE	= 0x02
 } RZUniformType;
 
 typedef enum RZUniformStage {
@@ -84,24 +71,18 @@ typedef struct RZShaderCreateInfo {
 	uint32_t descriptorCount;
 } RZShaderCreateInfo;
 
-typedef enum RZColorSize {
-	RZ_COLOR_SIZE_FLOAT_32 = 0x01,
-	RZ_COLOR_SIZE_INT_32 = 0x02,
-	RZ_COLOR_SIZE_INT_8 = 0x03,
-} RZColorSize;
-
-typedef enum RZColorFormat {
-	RZ_COLOR_FORMAT_R = 0x01,
-	RZ_COLOR_FORMAT_RG = 0x02,
-	RZ_COLOR_FORMAT_RGB = 0x03,
-	RZ_COLOR_FORMAT_RGBA = 0x04,
-} RZColorFormat;
+typedef enum RZComponentType {
+	RZ_COMPONENT_TYPE_FLOAT_32 = 0x01,
+	RZ_COMPONENT_TYPE_INT_32 = 0x02,
+	RZ_COMPONENT_TYPE_INT_8 = 0x03,
+} RZComponentType;
 
 typedef struct RZTextureCreateInfo {
 	uint32_t width;
 	uint32_t height;
-	RZColorSize colorSize;
-	RZColorFormat colorFormat;
+	RZComponentType componentType;
+	size_t bytesPerComponent;
+	size_t componentsPerPixel;
 	void* data;
 } RZTextureCreateInfo;
 

@@ -6,6 +6,10 @@ int main() {
 	glfwInit();
 
 	RZPlatform platform = RZ_PLATFORM_VULKAN;
+	
+#ifdef __APPLE__
+	platform = RZ_PLATFORM_METAL;
+#endif
 
 	RZRenderContext* ctx = rzCreateRenderContext(platform);
 
@@ -41,23 +45,17 @@ int main() {
 	RZBuffer* buffer = rzAllocateBuffer(ctx, &bufferCreateInfo, verts, sizeof(float) * 6 * 4);
 
 	RZUniformDescriptor uniformDescriptors[3];
-	uniformDescriptors[0].index = 0;
+	uniformDescriptors[0].index = 1;
 	uniformDescriptors[0].name = "view";
 	uniformDescriptors[0].stage = RZ_UNIFORM_STAGE_VERTEX;
-	uniformDescriptors[0].type = RZ_UNIFORM_TYPE_MATRIX_4;
-	uniformDescriptors[0].bufferSize = sizeof(float) * 16;
+	uniformDescriptors[0].type = RZ_UNIFORM_TYPE_BUFFER;
+	uniformDescriptors[0].bufferSize = sizeof(float) * 32;
 
-	uniformDescriptors[1].index = 1;
-	uniformDescriptors[1].name = "proj";
-	uniformDescriptors[1].stage = RZ_UNIFORM_STAGE_VERTEX;
-	uniformDescriptors[1].type = RZ_UNIFORM_TYPE_MATRIX_4;
-	uniformDescriptors[1].bufferSize = sizeof(float) * 16;
-
-	uniformDescriptors[2].index = 2;
-	uniformDescriptors[2].name = "tex";
-	uniformDescriptors[2].stage = RZ_UNIFORM_STAGE_FRAGMENT;
-	uniformDescriptors[2].type = RZ_UNIFORM_TYPE_SAMPLED_IMAGE;
-	uniformDescriptors[2].bufferSize = 0;
+	uniformDescriptors[1].index = 0;
+	uniformDescriptors[1].name = "tex";
+	uniformDescriptors[1].stage = RZ_UNIFORM_STAGE_FRAGMENT;
+	uniformDescriptors[1].type = RZ_UNIFORM_TYPE_SAMPLED_IMAGE;
+	uniformDescriptors[1].bufferSize = 0;
 
 	RZShaderCreateInfo shaderCreateInfo;
 	shaderCreateInfo.isPath = RZ_TRUE;
@@ -66,16 +64,13 @@ int main() {
 	shaderCreateInfo.fragSize = 0;
 	shaderCreateInfo.descriptors = uniformDescriptors;
 	shaderCreateInfo.descriptorCount = 3;
+	
+	shaderCreateInfo.vertData = "res/shader-vert.spv";
+	shaderCreateInfo.fragData = "res/shader-frag.spv";
 
-	if (platform == RZ_PLATFORM_VULKAN) {
-		shaderCreateInfo.vertData = "res/shader-vert.spv";
-		shaderCreateInfo.fragData = "res/shader-frag.spv";
-	}
 #ifdef __APPLE__
-	else if (platform == RZ_PLATFORM_METAL) {
-		shaderCreateInfo.vertData = "vertex_function";
-		shaderCreateInfo.fragData = "fragment_function";
-	}
+	shaderCreateInfo.vertData = "vertex_function";
+	shaderCreateInfo.fragData = "fragment_function";
 #endif
 	
 
@@ -86,10 +81,8 @@ int main() {
 		1, 0, 0, 0,
 		0, 1, 0, 0,
 		0, 0, 1, 0,
-		0, 0, 0, 1
-	};
-
-	float proj[] = {
+		0, 0, 0, 1,
+		
 		1, 0, 0, 0,
 		0, 1, 0, 0,
 		0, 0, 1, 0,
@@ -97,25 +90,25 @@ int main() {
 	};
 
 	rzUniformData(ctx, uniform, 0, view);
-	rzUniformData(ctx, uniform, 1, proj);
 
 	float imageData[] = {
-		1.0f, 0.0f, 0.0f,    0.0f, 1.0f, 0.0f,   0.0f, 0.0f, 1.0f,    0.0f, 0.0f, 0.0f,
-		1.0f, 0.3f, 0.3f,    0.3f, 1.0f, 0.3f,   0.3f, 0.3f, 1.0f,    0.3f, 0.3f, 0.3f,
-		1.0f, 0.5f, 0.5f,    0.5f, 1.0f, 0.5f,   0.5f, 0.5f, 1.0f,    0.5f, 0.5f, 0.5f,
-		1.0f, 0.8f, 0.8f,    0.8f, 1.0f, 0.8f,   0.8f, 0.8f, 1.0f,    0.8f, 0.8f, 0.8f
+		1.0f, 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 0.0f, 1.0f,   0.0f, 0.0f, 1.0f, 1.0f,    0.0f, 0.0f, 0.0f, 1.0f,
+		1.0f, 0.3f, 0.3f, 1.0f,    0.3f, 1.0f, 0.3f, 1.0f,   0.3f, 0.3f, 1.0f, 1.0f,    0.3f, 0.3f, 0.3f, 1.0f,
+		1.0f, 0.5f, 0.5f, 1.0f,    0.5f, 1.0f, 0.5f, 1.0f,   0.5f, 0.5f, 1.0f, 1.0f,    0.5f, 0.5f, 0.5f, 1.0f,
+		1.0f, 0.8f, 0.8f, 1.0f,    0.8f, 1.0f, 0.8f, 1.0f,   0.8f, 0.8f, 1.0f, 1.0f,    0.8f, 0.8f, 0.8f, 1.0f
 	};
 
 	RZTextureCreateInfo textureCreateInfo;
 	textureCreateInfo.width = 4;
 	textureCreateInfo.height = 4;
 	textureCreateInfo.data = imageData;
-	textureCreateInfo.colorSize = RZ_COLOR_SIZE_FLOAT_32;
-	textureCreateInfo.colorFormat = RZ_COLOR_FORMAT_RGB;
+	textureCreateInfo.componentsPerPixel = 4;
+	textureCreateInfo.bytesPerComponent = sizeof(float);
+	textureCreateInfo.componentType = RZ_COMPONENT_TYPE_FLOAT_32;
 
 	RZTexture* texture = rzCreateTexture(ctx, &textureCreateInfo);
 
-	rzUniformData(ctx, uniform, 2, texture);
+	rzUniformData(ctx, uniform, 1, texture);
 
 	double ct = glfwGetTime();
 	double dt = ct;
