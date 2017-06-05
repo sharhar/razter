@@ -47,7 +47,7 @@ GLFWwindow* rzvkCreateWindow(VKCTX* ctx, int width, int height, const char* titl
 	VKLDeviceGraphicsContext** deviceContexts;
 	vklCreateDevice(ctx->instance, &ctx->device, &ctx->surface, 1, &deviceContexts, 0, NULL);
 	ctx->devCon = deviceContexts[0];
-	vklCreateSwapChain(ctx->devCon, &ctx->swapChain, VK_TRUE);
+	vklCreateSwapChain(ctx->devCon, &ctx->swapChain, VK_FALSE);
 
 	vklAllocateCommandBuffer(ctx->devCon, &ctx->cmdBuffer, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
 
@@ -141,7 +141,7 @@ RZShader* rzvkCreateShader(VKCTX* ctx, RZShaderCreateInfo* createInfo) {
 		bindings = malloc_c(sizeof(VkDescriptorSetLayoutBinding) * bindingCount);
 
 		for (uint32_t i = 0; i < bindingCount; i++) {
-			bindings[i].binding = createInfo->descriptors[i].index;
+			bindings[i].binding = i;
 			bindings[i].descriptorCount = 1;
 			bindings[i].pImmutableSamplers = NULL;
 
@@ -217,7 +217,7 @@ RZUniform* rzvkCreateUniform(VKCTX* ctx, VKShader* shader) {
 
 		if (uniform->types[i] != RZ_UNIFORM_TYPE_SAMPLED_IMAGE) {
 			vklCreateBuffer(ctx->device, &uniform->buffers[i], VK_FALSE, shader->descriptors[i].bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-			vklSetUniformBuffer(ctx->device, uniform->uniform, uniform->buffers[i], shader->descriptors[i].index);
+			vklSetUniformBuffer(ctx->device, uniform->uniform, uniform->buffers[i], i);
 		}
 
 	}
@@ -233,7 +233,7 @@ void rzvkBindUniform(VKCTX* ctx, VKShader* shader, VKUniform* uniform) {
 void rzvkUniformData(VKCTX* ctx, VKUniform* uniform, uint32_t index, void* data) {
 	if (uniform->types[index] == RZ_UNIFORM_TYPE_SAMPLED_IMAGE) {
 		VKTexture* texture = (VKTexture*)data;
-		vklSetUniformTexture(ctx->device, uniform->uniform, texture->texture, uniform->indexes[index]);
+		vklSetUniformTexture(ctx->device, uniform->uniform, texture->texture, index);
 	} else {
 		vklWriteToMemory(ctx->device, uniform->buffers[index]->memory, data, uniform->buffers[index]->size);
 	}
@@ -253,75 +253,42 @@ RZTexture* rzvkCreateTexture(VKCTX* ctx, RZTextureCreateInfo* createInfo) {
 	textureCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
 	textureCreateInfo.filter = VK_FILTER_NEAREST;
 	
-	/*
-	RZColorFormat format = createInfo->colorFormat;
-	RZColorSize size = createInfo->colorSize;
+	RZComponentType type = createInfo->componentType;
 
-	if (format == RZ_COLOR_FORMAT_R) {
-		if (size == RZ_COLOR_SIZE_FLOAT_32) {
+	textureCreateInfo.colorCount = createInfo->componentsPerPixel;
+	textureCreateInfo.colorSize = createInfo->bytesPerComponent;
+
+	if (type == RZ_COMPONENT_TYPE_FLOAT_32) {
+		if (createInfo->componentsPerPixel == 1) {
 			textureCreateInfo.format = VK_FORMAT_R32_SFLOAT;
-			textureCreateInfo.colorSize = sizeof(float);
-			textureCreateInfo.colorCount = 1;
-		}
-		else if (size == RZ_COLOR_SIZE_INT_32) {
-			textureCreateInfo.format = VK_FORMAT_R32_UINT;
-			textureCreateInfo.colorSize = sizeof(uint32_t);
-			textureCreateInfo.colorCount = 1;
-		}
-		else if (size == RZ_COLOR_SIZE_INT_8) {
-			textureCreateInfo.format = VK_FORMAT_R8_UNORM;
-			textureCreateInfo.colorSize = sizeof(uint8_t);
-			textureCreateInfo.colorCount = 1;
-		}
-	} else if (format == RZ_COLOR_FORMAT_RG) {
-		if (size == RZ_COLOR_SIZE_FLOAT_32) {
+		} else if (createInfo->componentsPerPixel == 2) {
 			textureCreateInfo.format = VK_FORMAT_R32G32_SFLOAT;
-			textureCreateInfo.colorSize = sizeof(float);
-			textureCreateInfo.colorCount = 2;
-		}
-		else if (size == RZ_COLOR_SIZE_INT_32) {
-			textureCreateInfo.format = VK_FORMAT_R32G32_UINT;
-			textureCreateInfo.colorSize = sizeof(uint32_t);
-			textureCreateInfo.colorCount = 2;
-		}
-		else if (size == RZ_COLOR_SIZE_INT_8) {
-			textureCreateInfo.format = VK_FORMAT_R8G8_UNORM;
-			textureCreateInfo.colorSize = sizeof(uint8_t);
-			textureCreateInfo.colorCount = 2;
-		}
-	} else if (format == RZ_COLOR_FORMAT_RGB) {
-		if (size == RZ_COLOR_SIZE_FLOAT_32) {
+		} else if (createInfo->componentsPerPixel == 3) {
 			textureCreateInfo.format = VK_FORMAT_R32G32B32_SFLOAT;
-			textureCreateInfo.colorSize = sizeof(float);
-			textureCreateInfo.colorCount = 3;
-		}
-		else if (size == RZ_COLOR_SIZE_INT_32) {
-			textureCreateInfo.format = VK_FORMAT_R32G32B32_SINT;
-			textureCreateInfo.colorSize = sizeof(uint32_t);
-			textureCreateInfo.colorCount = 3;
-		}
-		else if (size == RZ_COLOR_SIZE_INT_8) {
-			textureCreateInfo.format = VK_FORMAT_R8G8B8_UNORM;
-			textureCreateInfo.colorSize = sizeof(uint8_t);
-			textureCreateInfo.colorCount = 3;
-		}
-	} else if (format == RZ_COLOR_FORMAT_RGBA) {
-		if (size == RZ_COLOR_SIZE_FLOAT_32) {
+		} else if (createInfo->componentsPerPixel == 4) {
 			textureCreateInfo.format = VK_FORMAT_R32G32B32A32_SFLOAT;
-			textureCreateInfo.colorSize = sizeof(float);
-			textureCreateInfo.colorCount = 4;
-		} else if (size == RZ_COLOR_SIZE_INT_32) {
+		}
+	} else if (type == RZ_COMPONENT_TYPE_INT_32) {
+		if (createInfo->componentsPerPixel == 1) {
+			textureCreateInfo.format = VK_FORMAT_R32_UINT;
+		} else if (createInfo->componentsPerPixel == 2) {
+			textureCreateInfo.format = VK_FORMAT_R32G32_UINT;
+		} else if (createInfo->componentsPerPixel == 3) {
+			textureCreateInfo.format = VK_FORMAT_R32G32B32_UINT;
+		} else if (createInfo->componentsPerPixel == 4) {
 			textureCreateInfo.format = VK_FORMAT_R32G32B32A32_UINT;
-			textureCreateInfo.colorSize = sizeof(uint32_t);
-			textureCreateInfo.colorCount = 4;
-		} else if (size == RZ_COLOR_SIZE_INT_8) {
+		}
+	} else if (type == RZ_COMPONENT_TYPE_INT_8) {
+		if (createInfo->componentsPerPixel == 1) {
+			textureCreateInfo.format = VK_FORMAT_R8_UNORM;
+		} else if (createInfo->componentsPerPixel == 2) {
+			textureCreateInfo.format = VK_FORMAT_R8G8_UNORM;
+		} else if (createInfo->componentsPerPixel == 3) {
+			textureCreateInfo.format = VK_FORMAT_R8G8B8_UNORM;
+		} else if (createInfo->componentsPerPixel == 4) {
 			textureCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-			textureCreateInfo.colorSize = sizeof(uint8_t);
-			textureCreateInfo.colorCount = 4;
 		}
 	}
-	*/
-	
 
 	vklCreateStagedTexture(ctx->devCon, &texture->texture, &textureCreateInfo, createInfo->data);
 

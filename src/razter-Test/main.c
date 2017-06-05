@@ -44,7 +44,7 @@ int main() {
 
 	RZBuffer* buffer = rzAllocateBuffer(ctx, &bufferCreateInfo, verts, sizeof(float) * 6 * 4);
 
-	RZUniformDescriptor uniformDescriptors[3];
+	RZUniformDescriptor uniformDescriptors[2];
 	uniformDescriptors[0].index = 1;
 	uniformDescriptors[0].name = "view";
 	uniformDescriptors[0].stage = RZ_UNIFORM_STAGE_VERTEX;
@@ -63,7 +63,7 @@ int main() {
 	shaderCreateInfo.vertSize = 0;
 	shaderCreateInfo.fragSize = 0;
 	shaderCreateInfo.descriptors = uniformDescriptors;
-	shaderCreateInfo.descriptorCount = 3;
+	shaderCreateInfo.descriptorCount = 2;
 	
 	shaderCreateInfo.vertData = "res/shader-vert.spv";
 	shaderCreateInfo.fragData = "res/shader-frag.spv";
