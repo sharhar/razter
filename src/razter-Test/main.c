@@ -13,7 +13,13 @@ int main() {
 
 	RZRenderContext* ctx = rzCreateRenderContext(platform);
 
-	GLFWwindow* window = rzCreateWindow(ctx, 800, 600, "Razter Test");
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	GLFWwindow* window = glfwCreateWindow(800, 600, "Razter Test", NULL, NULL);
+
+	RZCommandQueue** queues;
+	rzInitContext(ctx, window, RZ_TRUE, 1, &queues);
+
+	RZCommandQueue* queue = queues[0];
 
 	rzSetClearColor(ctx, 0.0f, 1.0f, 1.0f, 1.0f);
 
@@ -42,7 +48,7 @@ int main() {
 	bufferCreateInfo.type = RZ_BUFFER_TYPE_STATIC;
 	bufferCreateInfo.vertexAttribDesc = &vertexAttribDesc;
 
-	RZBuffer* buffer = rzAllocateBuffer(ctx, &bufferCreateInfo, verts, sizeof(float) * 6 * 4);
+	RZBuffer* buffer = rzAllocateBuffer(ctx, queue, &bufferCreateInfo, verts, sizeof(float) * 6 * 4);
 
 	RZUniformDescriptor uniformDescriptors[2];
 	uniformDescriptors[0].index = 1;
@@ -110,9 +116,11 @@ int main() {
 	textureCreateInfo.bytesPerComponent = sizeof(float);
 	textureCreateInfo.componentType = RZ_COMPONENT_TYPE_FLOAT_32;
 
-	RZTexture* texture = rzCreateTexture(ctx, &textureCreateInfo);
+	RZTexture* texture = rzCreateTexture(ctx, queue, &textureCreateInfo);
 
 	rzUniformData(ctx, uniform, 1, texture);
+
+	RZCommandBuffer* cmdBuffer = rzCreateCommandBuffer(ctx, queue);
 
 	double ct = glfwGetTime();
 	double dt = ct;
@@ -140,16 +148,16 @@ int main() {
 		view[12] = glfwGetTime()/10.0f;
 		rzUniformData(ctx, uniform, 0, view);
 
-		rzClear(ctx);
+		rzClear(ctx, cmdBuffer);
 		
-		rzBindBuffer(ctx, buffer);
-		rzBindShader(ctx, shader);
+		rzBindBuffer(ctx, cmdBuffer, buffer);
+		rzBindShader(ctx, cmdBuffer, shader);
 
-		rzBindUniform(ctx, shader, uniform);
+		rzBindUniform(ctx, cmdBuffer, shader, uniform);
 
-		rzDraw(ctx, 0, 6);
+		rzDraw(ctx, cmdBuffer, 0, 6);
 
-		rzSwap(ctx);
+		rzSwap(ctx, cmdBuffer);
 	}
 
 	glfwTerminate();

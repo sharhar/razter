@@ -6,8 +6,8 @@ typedef struct VKCTX {
 	VKLInstance* instance;
 	VKLSurface* surface;
 	VKLDevice* device;
-	VKLDeviceGraphicsContext* devCon;
 	VKLSwapChain* swapChain;
+	VKLFrameBuffer* backBuffer;
 	VkCommandBuffer cmdBuffer;
 } VKCTX;
 
@@ -34,29 +34,47 @@ typedef struct VKTexture {
 	VKLTexture* texture;
 } VKTexture;
 
-void rzvkInit(RZRenderContext* ctx) {
+typedef struct VKCommandQueue {
+	VKLDeviceGraphicsContext* devCon;
+} VKCommandQueue;
+
+typedef struct VKCommandBuffer {
+	VkCommandBuffer cmdBuffer;
+} VKCommandBuffer;
+
+void rzvkInitContext(RZRenderContext* ctx, GLFWwindow* window, RZBool debug, uint32_t queueCount, VKCommandQueue*** pQueues) {
 	ctx->ctx = (VKCTX*)malloc(sizeof(VKCTX));
-}
 
-GLFWwindow* rzvkCreateWindow(VKCTX* ctx, int width, int height, const char* title) {
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	GLFWwindow* window = glfwCreateWindow(800, 600, "Razter Test", NULL, NULL);
+	VKCTX* vctx = (VKCTX*)ctx->ctx;
 
-	vklCreateInstance(&ctx->instance, NULL, VK_TRUE, NULL);
-	vklCreateGLFWSurface(ctx->instance, &ctx->surface, window);
+	VkBool32 vkDebug = VK_FALSE;
+
+	if (debug == RZ_TRUE) {
+		vkDebug = VK_TRUE;
+	}
+
+	vklCreateInstance(&vctx->instance, NULL, vkDebug, NULL);
+	vklCreateGLFWSurface(vctx->instance, &vctx->surface, window);
 	VKLDeviceGraphicsContext** deviceContexts;
-	vklCreateDevice(ctx->instance, &ctx->device, &ctx->surface, 1, &deviceContexts, 0, NULL);
-	ctx->devCon = deviceContexts[0];
-	vklCreateSwapChain(ctx->devCon, &ctx->swapChain, VK_FALSE);
+	vklCreateDevice(vctx->instance, &vctx->device, &vctx->surface, queueCount, &deviceContexts, 0, NULL);
 
-	vklAllocateCommandBuffer(ctx->devCon, &ctx->cmdBuffer, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
+	VKCommandQueue** queues = malloc_c(sizeof(VKCommandQueue*));
+	for (uint32_t i = 0; i < queueCount;i++) {
+		queues[i] = malloc_c(sizeof(VKCommandQueue));
+		queues[i]->devCon = deviceContexts[i];
+	}
 
-	return window;
+	vklCreateSwapChain(queues[0]->devCon, &vctx->swapChain, VK_FALSE);
+	vklGetBackBuffer(vctx->swapChain, &vctx->backBuffer);
+
+	vklAllocateCommandBuffer(queues[0]->devCon, &vctx->cmdBuffer, VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1);
+
+	*pQueues = queues;
 }
 
-void rzvkClear(VKCTX* ctx) {
-	vklClearScreen(ctx->swapChain);
-	vklBeginRenderRecording(ctx->swapChain, ctx->cmdBuffer);
+void rzvkClear(VKCTX* ctx, VKCommandBuffer* cmdBuffer) {
+	vklBeginCommandBuffer(ctx->device, ctx->cmdBuffer);
+	vklBeginRender(ctx->device, ctx->backBuffer, ctx->cmdBuffer);
 
 	VkViewport viewport = { 0, 0, ctx->swapChain->width, ctx->swapChain->height, 0, 1 };
 	VkRect2D scissor = {
@@ -68,23 +86,26 @@ void rzvkClear(VKCTX* ctx) {
 }
 
 void rzvkSetClearColor(VKCTX* ctx, float r, float g, float b, float a) {
-	vklSetClearColor(ctx->swapChain, r, g, b, a);
+	vklSetClearColor(ctx->backBuffer, r, g, b, a);
 }
 
-void rzvkSwap(VKCTX* ctx) {
-	vklEndRenderRecording(ctx->swapChain, ctx->cmdBuffer);
-	vklRenderRecording(ctx->swapChain, ctx->cmdBuffer);
-	vklSwapBuffers(ctx->swapChain);
+void rzvkSwap(VKCTX* ctx, VKCommandBuffer* cmdBuffer) {
+	vklEndRender(ctx->device, ctx->backBuffer, ctx->cmdBuffer);
+	vklEndCommandBuffer(ctx->device, ctx->cmdBuffer);
+	
+	vklExecuteCommandBuffer(ctx->swapChain->context, ctx->cmdBuffer);
+
+	vklPresent(ctx->swapChain);
 }
 
-RZBuffer* rzvkAllocateBuffer(VKCTX* ctx, RZBufferCreateInfo* createInfo, void* data, size_t size) {
+RZBuffer* rzvkAllocateBuffer(VKCTX* ctx, VKCommandQueue* queue, RZBufferCreateInfo* createInfo, void* data, size_t size) {
 	VKBuffer* buffer = malloc(sizeof(VKBuffer));
 
 	if (createInfo->type == RZ_BUFFER_TYPE_DYNAMIC) {
 		vklCreateBuffer(ctx->device, &buffer->buffer, VK_FALSE, size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 		vklWriteToMemory(ctx->device, buffer->buffer->memory, data, size);
 	} else if (createInfo->type == RZ_BUFFER_TYPE_STATIC) {
-		vklCreateStagedBuffer(ctx->devCon, &buffer->buffer, data, size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+		vklCreateStagedBuffer(queue->devCon, &buffer->buffer, data, size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 	}
 	
 	return buffer;
@@ -94,7 +115,7 @@ void rzvkUpdateBuffer(VKCTX* ctx, VKBuffer* buffer, void* data, size_t size) {
 
 }
 
-void rzvkBindBuffer(VKCTX* ctx, VKBuffer* buffer) {
+void rzvkBindBuffer(VKCTX* ctx, VKCommandBuffer* cmdBuffer, VKBuffer* buffer) {
 	VkDeviceSize offsets = 0;
 	ctx->device->pvkCmdBindVertexBuffers(ctx->cmdBuffer, 0, 1, &buffer->buffer->buffer, &offsets);
 }
@@ -178,7 +199,7 @@ RZShader* rzvkCreateShader(VKCTX* ctx, RZShaderCreateInfo* createInfo) {
 	VKLPipelineCreateInfo pipelineCreateInfo;
 	memset(&pipelineCreateInfo, 0, sizeof(VKLPipelineCreateInfo));
 	pipelineCreateInfo.shader = shader->shader;
-	pipelineCreateInfo.renderPass = ctx->swapChain->renderPass;
+	pipelineCreateInfo.renderPass = ctx->backBuffer->renderPass;
 	pipelineCreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	pipelineCreateInfo.cullMode = VK_CULL_MODE_NONE;
 	pipelineCreateInfo.extent.width = ctx->swapChain->width;
@@ -189,7 +210,7 @@ RZShader* rzvkCreateShader(VKCTX* ctx, RZShaderCreateInfo* createInfo) {
 	return shader;
 }
 
-void rzvkBindShader(VKCTX* ctx, VKShader* shader) {
+void rzvkBindShader(VKCTX* ctx, VKCommandBuffer* cmdBuffer, VKShader* shader) {
 	ctx->device->pvkCmdBindPipeline(ctx->cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->pipeline->pipeline);
 }
 
@@ -197,7 +218,7 @@ void rzvkDestroyShader(VKCTX* ctx, VKShader* shader) {
 
 }
 
-void rzvkDraw(VKCTX* ctx, uint32_t firstVertex, uint32_t vertexCount) {
+void rzvkDraw(VKCTX* ctx, VKCommandBuffer* cmdBuffer, uint32_t firstVertex, uint32_t vertexCount) {
 	ctx->device->pvkCmdDraw(ctx->cmdBuffer, vertexCount, 1, firstVertex, 0);
 }
 
@@ -225,7 +246,7 @@ RZUniform* rzvkCreateUniform(VKCTX* ctx, VKShader* shader) {
 	return uniform;
 }
 
-void rzvkBindUniform(VKCTX* ctx, VKShader* shader, VKUniform* uniform) {
+void rzvkBindUniform(VKCTX* ctx, VKCommandBuffer* cmdBuffer, VKShader* shader, VKUniform* uniform) {
 	ctx->device->pvkCmdBindDescriptorSets(ctx->cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 		shader->pipeline->pipelineLayout, 0, 1, &uniform->uniform->descriptorSet, 0, NULL);
 }
@@ -243,7 +264,7 @@ void rzvkDestroyUniform(VKCTX* ctx, VKUniform* uniform) {
 	
 }
 
-RZTexture* rzvkCreateTexture(VKCTX* ctx, RZTextureCreateInfo* createInfo) {
+RZTexture* rzvkCreateTexture(VKCTX* ctx, VKCommandQueue* queue, RZTextureCreateInfo* createInfo) {
 	VKTexture* texture = malloc_c(sizeof(VKTexture));
 
 	VKLTextureCreateInfo textureCreateInfo;
@@ -290,7 +311,7 @@ RZTexture* rzvkCreateTexture(VKCTX* ctx, RZTextureCreateInfo* createInfo) {
 		}
 	}
 
-	vklCreateStagedTexture(ctx->devCon, &texture->texture, &textureCreateInfo, createInfo->data);
+	vklCreateStagedTexture(queue->devCon, &texture->texture, &textureCreateInfo, createInfo->data);
 
 	return texture;
 }
@@ -299,9 +320,32 @@ void rzvkDestroyTexture(VKCTX* ctx, RZTexture* texture) {
 	
 }
 
+RZCommandBuffer* rzvkCreateCommandBuffer(VKCTX* ctx, RZCommandQueue* queue) {
+	return NULL;
+}
+
+void rzvkStartRecording(VKCTX* ctx, VKCommandBuffer* cmdBuffer) {
+	
+}
+
+void rzvkStartRenderRecording(VKCTX* ctx, VKCommandBuffer* cmdBuffer) {
+	
+}
+
+void rzvkEndRenderRecording(VKCTX* ctx, VKCommandBuffer* cmdBuffer) {
+	
+}
+
+void rzvkEndRecording(VKCTX* ctx, VKCommandBuffer* cmdBuffer) {
+	
+}
+
+void rzvkSubmitCommandBuffer(RZRenderContext* ctx, RZCommandQueue* queue, VKCommandBuffer* cmdBuffer) {
+	
+}
+
 void rzvkLoadPFN(RZRenderContext* ctx) {
-	ctx->init = rzvkInit;
-	ctx->createWindow = rzvkCreateWindow;
+	ctx->initContext = rzvkInitContext;
 	ctx->clear = rzvkClear;
 	ctx->setClearColor = rzvkSetClearColor;
 	ctx->swap = rzvkSwap;
@@ -324,4 +368,11 @@ void rzvkLoadPFN(RZRenderContext* ctx) {
 
 	ctx->createTexture = rzvkCreateTexture;
 	ctx->destroyTexture = rzvkDestroyTexture;
+
+	ctx->createCommandBuffer = rzvkCreateCommandBuffer;
+	ctx->startRecording = rzvkStartRecording;
+	ctx->startRenderRecording = rzvkStartRenderRecording;
+	ctx->endRenderRecording = rzvkEndRenderRecording;
+	ctx->endRecording = rzvkEndRecording;
+	ctx->submitCommandBuffer = rzvkSubmitCommandBuffer;
 }
