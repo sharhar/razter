@@ -104,7 +104,7 @@ typedef struct RZRenderContext {
 
 	void (*initContext)(RZRenderContext* ctx, GLFWwindow* window, RZBool debug, uint32_t queueCount, RZCommandQueue*** pQueues);
 	void (*setClearColor)(RZInternalContext* ctx, float r, float g, float b, float a);
-	void (*clear)(RZInternalContext* ctx, RZCommandBuffer* cmdBuffer);
+	void (*clear)(RZInternalContext* ctx, RZCommandQueue* queue, RZCommandBuffer* cmdBuffer);
 	void (*swap)(RZInternalContext* ctx, RZCommandBuffer* cmdBuffer);
 
 	RZBuffer* (*allocBuffer)(RZInternalContext* ctx, RZCommandQueue* queue, RZBufferCreateInfo* createInfo, void* data, size_t size);
@@ -143,7 +143,7 @@ void rzmtLoadPFN(RZRenderContext* ctx);
 RZRenderContext* rzCreateRenderContext(RZPlatform type);
 
 void rzInitContext(RZRenderContext* ctx, GLFWwindow* window, RZBool debug, uint32_t queueCount, RZCommandQueue*** pQueues);
-void rzClear(RZRenderContext* ctx, RZCommandBuffer* cmdBuffer);
+void rzClear(RZRenderContext* ctx, RZCommandQueue* queue, RZCommandBuffer* cmdBuffer);
 void rzSetClearColor(RZRenderContext* ctx, float r, float g, float b, float a);
 void rzSwap(RZRenderContext* ctx, RZCommandBuffer* cmdBuffer);
 

@@ -60,8 +60,8 @@ void rzInitContext(RZRenderContext* ctx, GLFWwindow* window, RZBool debug, uint3
 	ctx->initContext(ctx, window, debug, queueCount, pQueues);
 }
 
-void rzClear(RZRenderContext* ctx, RZCommandBuffer* cmdBuffer) {
-	ctx->clear(ctx->ctx, cmdBuffer);
+void rzClear(RZRenderContext* ctx, RZCommandQueue* queue, RZCommandBuffer* cmdBuffer) {
+	ctx->clear(ctx->ctx, queue, cmdBuffer);
 }
 
 void rzSetClearColor(RZRenderContext* ctx, float r, float g, float b, float a) {

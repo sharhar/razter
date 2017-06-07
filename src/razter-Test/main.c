@@ -148,7 +148,7 @@ int main() {
 		view[12] = glfwGetTime()/10.0f;
 		rzUniformData(ctx, uniform, 0, view);
 
-		rzClear(ctx, cmdBuffer);
+		rzClear(ctx, queue, cmdBuffer);
 		
 		rzBindBuffer(ctx, cmdBuffer, buffer);
 		rzBindShader(ctx, cmdBuffer, shader);
