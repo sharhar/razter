@@ -129,13 +129,13 @@ int main() {
 	{//Pre-record rendering commands
 		rzStartCommandBuffer(ctx, queue, cmdBuffer);
 		rzStartRender(ctx, backBuffer, cmdBuffer);
-
+		
 		rzBindBuffer(ctx, cmdBuffer, buffer);
 		rzBindShader(ctx, cmdBuffer, shader);
 		rzBindUniform(ctx, cmdBuffer, shader, uniform);
-
+		
 		rzDraw(ctx, cmdBuffer, 0, 6);
-
+		
 		rzEndRender(ctx, backBuffer, cmdBuffer);
 		rzEndCommandBuffer(ctx, cmdBuffer);
 	}
@@ -165,7 +165,8 @@ int main() {
 
 		view[12] = glfwGetTime()/10.0f;
 		rzUniformData(ctx, uniform, 0, view);
-
+		
+		printf("Hello\n");
 		rzExecuteCommandBuffer(ctx, queue, cmdBuffer);
 
 		rzPresent(ctx, swapChain);
