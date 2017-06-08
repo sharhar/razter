@@ -9,10 +9,10 @@ typedef struct MTCTX {
 	NSWindow* window;
 	id<MTLDevice> device;
 	CAMetalLayer* metalLayer;
-	id<MTLCommandQueue> commandQueue;
 	id<CAMetalDrawable> drawable;
-	id<MTLCommandBuffer> commandBuffer;
+	id<MTLCommandQueue> queue;
 	id<MTLRenderCommandEncoder> renderEncoder;
+	id<MTLCommandBuffer> commandBuffer;
 	
 	float clearR, clearG, clearB, clearA;
 } MTCTX;
@@ -46,37 +46,59 @@ typedef struct MTTexture {
 	id<MTLSamplerState> sampler;
 } MTTexture;
 
+typedef struct MTCommandQueue {
+	id<MTLCommandQueue> queue;
+} MTCommandQueue;
+
+typedef struct MTCommandBuffer {
+	id<MTLCommandBuffer> cmdBuffer;
+	id<MTLRenderCommandEncoder> renderEncoder;
+	id<MTLBlitCommandEncoder> blitEncoder;
+} MTCommandBuffer;
+
 void rzmtInit(RZRenderContext* ctx) {
 	ctx->ctx = (MTCTX*)malloc(sizeof(MTCTX));
 }
 
-GLFWwindow* rzmtCreateWindow(MTCTX* ctx, int width, int height, const char* title) {
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	GLFWwindow* window = glfwCreateWindow(width, height, title, NULL, NULL);
+void rzmtInitContext(RZRenderContext* ctx, GLFWwindow* window, RZBool debug, uint32_t queueCount, MTCommandQueue*** pQueues) {
+	ctx->ctx = malloc(sizeof(MTCTX));
 	
-	ctx->window = glfwGetCocoaWindow(window);
+	MTCTX* mctx = (MTCTX*)ctx->ctx;
 	
-	ctx->device = MTLCreateSystemDefaultDevice();
-	ctx->metalLayer = [CAMetalLayer layer];
-	ctx->metalLayer.device = ctx->device;
-	ctx->metalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm;
-	ctx->metalLayer.frame = CGRectMake(0, 0, width, height);
+	mctx->window = glfwGetCocoaWindow(window);
 	
-	[ctx->metalLayer setPosition:CGPointMake([[ctx->window contentView] frame].size.width/2,
-											 [[ctx->window contentView]frame].size.height/2)];
+	int width, height;
+	glfwGetWindowSize(window, &width, &height);
 	
-	[[ctx->window contentView] setLayer:ctx->metalLayer];
-	[[ctx->window contentView] setWantsLayer:YES];
+	mctx->device = MTLCreateSystemDefaultDevice();
+	mctx->metalLayer = [CAMetalLayer layer];
+	mctx->metalLayer.device = mctx->device;
+	mctx->metalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm;
+	mctx->metalLayer.frame = CGRectMake(0, 0, width, height);
 	
-	ctx->commandQueue = [ctx->device newCommandQueue];
+	[mctx->metalLayer setPosition:CGPointMake([[mctx->window contentView] frame].size.width/2,
+											 [[mctx->window contentView]frame].size.height/2)];
 	
-	return window;
+	[[mctx->window contentView] setLayer:mctx->metalLayer];
+	[[mctx->window contentView] setWantsLayer:YES];
+	
+	mctx->queue = [mctx->device newCommandQueue];
+	
+	MTCommandQueue** queues = malloc(sizeof(MTCommandQueue*) * queueCount);
+	
+	for(uint32_t i = 0; i < queueCount;i++) {
+		queues[i] = malloc(sizeof(MTCommandQueue));
+		
+		queues[i]->queue = [mctx->device newCommandQueue];
+	}
+	
+	*pQueues = queues;
 }
 
-void rzmtClear(MTCTX* ctx) {
+void rzmtClear(MTCTX* ctx, MTCommandQueue* queue, MTCommandBuffer* cmdBuffer) {
 	ctx->drawable = [ctx->metalLayer nextDrawable];
 	
-	ctx->commandBuffer = [ctx->commandQueue commandBuffer];
+	ctx->commandBuffer = [ctx->queue commandBuffer];
 	
 	MTLRenderPassDescriptor* renderPassDescriptor = [MTLRenderPassDescriptor renderPassDescriptor];
 	renderPassDescriptor.colorAttachments[0].texture = ctx->drawable.texture;
@@ -94,7 +116,7 @@ void rzmtSetClearColor(MTCTX* ctx, float r, float g, float b, float a) {
 	ctx->clearA = a;
 }
 
-void rzmtSwap(MTCTX* ctx) {
+void rzmtSwap(MTCTX* ctx, MTCommandBuffer* cmdBuffer) {
 	[ctx->renderEncoder endEncoding];
 	
 	[ctx->commandBuffer presentDrawable:ctx->drawable];
@@ -102,7 +124,7 @@ void rzmtSwap(MTCTX* ctx) {
 	[ctx->commandBuffer commit];
 }
 
-RZBuffer* rzmtAllocateBuffer(MTCTX* ctx, RZBufferCreateInfo* createInfo, void* data, size_t size) {
+RZBuffer* rzmtAllocateBuffer(MTCTX* ctx, MTCommandQueue* queue, RZBufferCreateInfo* createInfo, void* data, size_t size) {
 	MTBuffer* buffer = malloc(sizeof(MTBuffer));
 	
 	buffer->buffer = [ctx->device newBufferWithBytes:data length:size options:MTLResourceOptionCPUCacheModeDefault];
@@ -114,7 +136,7 @@ void rzmtUpdateBuffer(RZRenderContext* ctx, MTBuffer* buffer, void* data, size_t
 	
 }
 
-void rzmtBindBuffer(MTCTX* ctx, MTBuffer* buffer) {
+void rzmtBindBuffer(MTCTX* ctx, MTCommandBuffer* cmdBuffer, MTBuffer* buffer) {
 	[ctx->renderEncoder setVertexBuffer:buffer->buffer offset:0 atIndex:0];
 }
 
@@ -184,7 +206,7 @@ RZShader* rzmtCreateShader(MTCTX* ctx, RZShaderCreateInfo* createInfo) {
 	return shader;
 }
 
-void rzmtBindShader(MTCTX* ctx, MTShader* shader) {
+void rzmtBindShader(MTCTX* ctx, MTCommandBuffer* cmdBuffer, MTShader* shader) {
 	[ctx->renderEncoder setRenderPipelineState:shader->pipelineState];
 }
 
@@ -192,7 +214,7 @@ void rzmtDestroyShader(MTCTX* ctx, MTShader* shader) {
 	
 }
 
-void rzmtDraw(MTCTX* ctx, uint32_t firstVertex, uint32_t vertexCount) {
+void rzmtDraw(MTCTX* ctx, MTCommandBuffer* cmdBuffer, uint32_t firstVertex, uint32_t vertexCount) {
 	[ctx->renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:firstVertex vertexCount:vertexCount];
 }
 
@@ -220,7 +242,7 @@ RZUniform* rzmtCreateUniform(MTCTX* ctx, MTShader* shader) {
 	return uniform;
 }
 
-void rzmtBindUniform(MTCTX* ctx, MTShader* shader, MTUniform* uniform) {
+void rzmtBindUniform(MTCTX* ctx, MTCommandBuffer* cmdBuffer, MTShader* shader, MTUniform* uniform) {
 	for(uint32_t i = 0; i < uniform->count;i++) {
 		RZUniformType type = uniform->types[i];
 		
@@ -249,7 +271,7 @@ void rzmtDestroyUniform(MTCTX* ctx, RZUniform* uniform) {
 	
 }
 
-RZTexture* rzmtCreateTexture(MTCTX* ctx, RZTextureCreateInfo* createInfo) {
+RZTexture* rzmtCreateTexture(MTCTX* ctx, MTCommandQueue* queue, RZTextureCreateInfo* createInfo) {
 	MTTexture* texture = malloc(sizeof(MTTexture));
 	
 	MTLPixelFormat* pixelFormat = MTLPixelFormatRGBA32Float;
@@ -307,9 +329,32 @@ void rzmtDestroyTexture(MTCTX* ctx, RZTexture* texture) {
 	
 }
 
+RZCommandBuffer* rzmtCreateCommandBuffer(MTCTX* ctx, MTCommandQueue* queue) {
+	return NULL;
+}
+
+void rzmtStartRecording(MTCTX* ctx, MTCommandBuffer* cmdBuffer) {
+	
+}
+
+void rzmtStartRenderRecording(MTCTX* ctx, MTCommandBuffer* cmdBuffer) {
+	
+}
+
+void rzmtEndRenderRecording(MTCTX* ctx, MTCommandBuffer* cmdBuffer) {
+	
+}
+
+void rzmtEndRecording(MTCTX* ctx, MTCommandBuffer* cmdBuffer) {
+	
+}
+
+void rzmtSubmitCommandBuffer(MTCTX* ctx, MTCommandQueue* queue, MTCommandBuffer* cmdBuffer) {
+	
+}
+
 void rzmtLoadPFN(RZRenderContext* ctx) {
-	ctx->init = rzmtInit;
-	ctx->createWindow = rzmtCreateWindow;
+	ctx->initContext = rzmtInitContext;
 	ctx->clear = rzmtClear;
 	ctx->setClearColor = rzmtSetClearColor;
 	ctx->swap = rzmtSwap;
@@ -332,4 +377,11 @@ void rzmtLoadPFN(RZRenderContext* ctx) {
 	
 	ctx->createTexture = rzmtCreateTexture;
 	ctx->destroyTexture = rzmtDestroyTexture;
+	
+	ctx->createCommandBuffer = rzmtCreateCommandBuffer;
+	ctx->startRecording = rzmtStartRecording;
+	ctx->startRenderRecording = rzmtStartRenderRecording;
+	ctx->endRenderRecording = rzmtEndRenderRecording;
+	ctx->endRecording = rzmtEndRecording;
+	ctx->submitCommandBuffer = rzmtSubmitCommandBuffer;
 }
