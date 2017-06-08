@@ -17,11 +17,14 @@ int main() {
 	GLFWwindow* window = glfwCreateWindow(800, 600, "Razter Test", NULL, NULL);
 
 	RZCommandQueue** queues;
-	rzInitContext(ctx, window, RZ_TRUE, 1, &queues);
+	RZSwapChain* swapChain;
 
+	rzInitContext(ctx, window, &swapChain, RZ_TRUE, 1, &queues);
 	RZCommandQueue* queue = queues[0];
 
-	rzSetClearColor(ctx, 0.0f, 1.0f, 1.0f, 1.0f);
+	rzSetClearColor(ctx, swapChain, 0.0f, 1.0f, 1.0f, 1.0f);
+
+	RZFrameBuffer* backBuffer = rzGetBackBuffer(ctx, swapChain);
 
 	float verts[] = {
 		-0.5f, -0.5f, 0.0f, 1.0f,
@@ -70,6 +73,7 @@ int main() {
 	shaderCreateInfo.fragSize = 0;
 	shaderCreateInfo.descriptors = uniformDescriptors;
 	shaderCreateInfo.descriptorCount = 2;
+	shaderCreateInfo.frameBuffer = backBuffer;
 	
 	shaderCreateInfo.vertData = "res/shader-vert.spv";
 	shaderCreateInfo.fragData = "res/shader-frag.spv";
@@ -122,6 +126,20 @@ int main() {
 
 	RZCommandBuffer* cmdBuffer = rzCreateCommandBuffer(ctx, queue);
 
+	{//Pre-record rendering commands
+		rzStartCommandBuffer(ctx, queue, cmdBuffer);
+		rzStartRender(ctx, backBuffer, cmdBuffer);
+
+		rzBindBuffer(ctx, cmdBuffer, buffer);
+		rzBindShader(ctx, cmdBuffer, shader);
+		rzBindUniform(ctx, cmdBuffer, shader, uniform);
+
+		rzDraw(ctx, cmdBuffer, 0, 6);
+
+		rzEndRender(ctx, backBuffer, cmdBuffer);
+		rzEndCommandBuffer(ctx, cmdBuffer);
+	}
+
 	double ct = glfwGetTime();
 	double dt = ct;
 
@@ -148,16 +166,9 @@ int main() {
 		view[12] = glfwGetTime()/10.0f;
 		rzUniformData(ctx, uniform, 0, view);
 
-		rzClear(ctx, cmdBuffer);
-		
-		rzBindBuffer(ctx, cmdBuffer, buffer);
-		rzBindShader(ctx, cmdBuffer, shader);
+		rzExecuteCommandBuffer(ctx, queue, cmdBuffer);
 
-		rzBindUniform(ctx, cmdBuffer, shader, uniform);
-
-		rzDraw(ctx, cmdBuffer, 0, 6);
-
-		rzSwap(ctx, cmdBuffer);
+		rzPresent(ctx, swapChain);
 	}
 
 	glfwTerminate();

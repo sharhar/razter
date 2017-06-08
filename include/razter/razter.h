@@ -8,6 +8,16 @@ extern "C" {
 #include <GLFW/glfw3.h>
 #include <stdlib.h>
 
+typedef void RZInternalContext;
+typedef void RZSwapChain;
+typedef void RZBuffer;
+typedef void RZShader;
+typedef void RZUniform;
+typedef void RZTexture;
+typedef void RZCommandQueue;
+typedef void RZCommandBuffer;
+typedef void RZFrameBuffer;
+
 typedef enum RZBool {
 	RZ_FALSE = 0x00,
 	RZ_TRUE = 0x01
@@ -71,6 +81,7 @@ typedef struct RZShaderCreateInfo {
 	RZBool isPath;
 	RZUniformDescriptor* descriptors;
 	uint32_t descriptorCount;
+	RZFrameBuffer* frameBuffer;
 } RZShaderCreateInfo;
 
 typedef enum RZComponentType {
@@ -87,14 +98,6 @@ typedef struct RZTextureCreateInfo {
 	size_t componentsPerPixel;
 	void* data;
 } RZTextureCreateInfo;
-
-typedef void RZInternalContext;
-typedef void RZBuffer;
-typedef void RZShader;
-typedef void RZUniform;
-typedef void RZTexture;
-typedef void RZCommandQueue;
-typedef void RZCommandBuffer;
 	
 struct RZRenderContext;
 typedef struct RZRenderContext RZRenderContext;
@@ -102,10 +105,10 @@ typedef struct RZRenderContext RZRenderContext;
 typedef struct RZRenderContext {
 	RZInternalContext* ctx;
 
-	void (*initContext)(RZRenderContext* ctx, GLFWwindow* window, RZBool debug, uint32_t queueCount, RZCommandQueue*** pQueues);
-	void (*setClearColor)(RZInternalContext* ctx, float r, float g, float b, float a);
-	void (*clear)(RZInternalContext* ctx, RZCommandBuffer* cmdBuffer);
-	void (*swap)(RZInternalContext* ctx, RZCommandBuffer* cmdBuffer);
+	void (*initContext)(RZRenderContext* ctx, GLFWwindow* window, RZSwapChain** pSwapChain, RZBool debug, uint32_t queueCount, RZCommandQueue*** pQueues);
+	RZFrameBuffer* (*getBackBuffer)(RZSwapChain* swapChain);
+	void (*setClearColor)(RZSwapChain* ctx, float r, float g, float b, float a);
+	void (*present)(RZInternalContext* ctx, RZSwapChain* swapChain);
 
 	RZBuffer* (*allocBuffer)(RZInternalContext* ctx, RZCommandQueue* queue, RZBufferCreateInfo* createInfo, void* data, size_t size);
 	void (*updateBuffer)(RZInternalContext* ctx, RZBuffer* buffer, void* data, size_t size);
@@ -127,11 +130,11 @@ typedef struct RZRenderContext {
 	void(*destroyTexture)(RZInternalContext* ctx, RZTexture* texture);
 
 	RZCommandBuffer* (*createCommandBuffer)(RZInternalContext* ctx, RZCommandQueue* queue);
-	void(*startRecording)(RZInternalContext* ctx, RZCommandBuffer* cmdBuffer);
-	void(*startRenderRecording)(RZInternalContext* ctx, RZCommandBuffer* cmdBuffer);
-	void(*endRenderRecording)(RZInternalContext* ctx, RZCommandBuffer* cmdBuffer);
-	void(*endRecording)(RZInternalContext* ctx, RZCommandBuffer* cmdBuffer);
-	void(*submitCommandBuffer)(RZInternalContext* ctx, RZCommandQueue* queue, RZCommandBuffer* cmdBuffer);
+	void(*startCommandBuffer)(RZInternalContext* ctx, RZCommandQueue* queue, RZCommandBuffer* cmdBuffer);
+	void(*startRender)(RZInternalContext* ctx, RZFrameBuffer* frameBuffer, RZCommandBuffer* cmdBuffer);
+	void(*endRender)(RZInternalContext* ctx, RZFrameBuffer* frameBuffer, RZCommandBuffer* cmdBuffer);
+	void(*endCommandBuffer)(RZInternalContext* ctx, RZCommandBuffer* cmdBuffer);
+	void(*executeCommandBuffer)(RZInternalContext* ctx, RZCommandQueue* queue, RZCommandBuffer* cmdBuffer);
 } RZRenderContext;
 
 void rzvkLoadPFN(RZRenderContext* ctx);
@@ -142,10 +145,10 @@ void rzmtLoadPFN(RZRenderContext* ctx);
 
 RZRenderContext* rzCreateRenderContext(RZPlatform type);
 
-void rzInitContext(RZRenderContext* ctx, GLFWwindow* window, RZBool debug, uint32_t queueCount, RZCommandQueue*** pQueues);
-void rzClear(RZRenderContext* ctx, RZCommandBuffer* cmdBuffer);
-void rzSetClearColor(RZRenderContext* ctx, float r, float g, float b, float a);
-void rzSwap(RZRenderContext* ctx, RZCommandBuffer* cmdBuffer);
+void rzInitContext(RZRenderContext* ctx, GLFWwindow* window, RZSwapChain** pSwapChain, RZBool debug, uint32_t queueCount, RZCommandQueue*** pQueues);
+RZFrameBuffer* rzGetBackBuffer(RZRenderContext* ctx, RZSwapChain* swapChain);
+void rzSetClearColor(RZRenderContext* ctx, RZSwapChain* swapChain, float r, float g, float b, float a);
+void rzPresent(RZRenderContext* ctx, RZSwapChain* swapChain);
 
 RZBuffer* rzAllocateBuffer(RZRenderContext* ctx, RZCommandQueue* queue, RZBufferCreateInfo* createInfo, void* data, size_t size);
 void rzUpdateBuffer(RZRenderContext* ctx, RZBuffer* buffer, void* data, size_t size);
@@ -167,11 +170,11 @@ RZTexture* rzCreateTexture(RZRenderContext* ctx, RZCommandQueue* queue, RZTextur
 void rzDestroyTexture(RZRenderContext* ctx, RZTexture* texture);
 
 RZCommandBuffer* rzCreateCommandBuffer(RZRenderContext* ctx, RZCommandQueue* queue);
-void rzStartRecording(RZRenderContext* ctx, RZCommandBuffer* cmdBuffer);
-void rzStartRenderRecording(RZRenderContext* ctx, RZCommandBuffer* cmdBuffer);
-void rzEndRenderRecording(RZRenderContext* ctx, RZCommandBuffer* cmdBuffer);
-void rzEndRecording(RZRenderContext* ctx, RZCommandBuffer* cmdBuffer);
-void rzSubmitCommandBuffer(RZRenderContext* ctx, RZCommandQueue* queue, RZCommandBuffer* cmdBuffer);
+void rzStartCommandBuffer(RZRenderContext* ctx, RZCommandQueue* queue, RZCommandBuffer* cmdBuffer);
+void rzStartRender(RZRenderContext* ctx, RZFrameBuffer* frameBuffer, RZCommandBuffer* cmdBuffer);
+void rzEndRender(RZRenderContext* ctx, RZFrameBuffer* frameBuffer, RZCommandBuffer* cmdBuffer);
+void rzEndCommandBuffer(RZRenderContext* ctx, RZCommandBuffer* cmdBuffer);
+void rzExecuteCommandBuffer(RZRenderContext* ctx, RZCommandQueue* queue, RZCommandBuffer* cmdBuffer);
 
 char* rzReadFileFromPath(char *filename, size_t* size);
 

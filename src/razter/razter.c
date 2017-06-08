@@ -56,20 +56,20 @@ RZRenderContext* rzCreateRenderContext(RZPlatform type) {
 	return ctx;
 }
 
-void rzInitContext(RZRenderContext* ctx, GLFWwindow* window, RZBool debug, uint32_t queueCount, RZCommandQueue*** pQueues) {
-	ctx->initContext(ctx, window, debug, queueCount, pQueues);
+void rzInitContext(RZRenderContext* ctx, GLFWwindow* window, RZSwapChain** pSwapChain, RZBool debug, uint32_t queueCount, RZCommandQueue*** pQueues) {
+	ctx->initContext(ctx, window, pSwapChain, debug, queueCount, pQueues);
 }
 
-void rzClear(RZRenderContext* ctx, RZCommandBuffer* cmdBuffer) {
-	ctx->clear(ctx->ctx, cmdBuffer);
+RZFrameBuffer* rzGetBackBuffer(RZRenderContext* ctx, RZSwapChain* swapChain) {
+	return ctx->getBackBuffer(swapChain);
 }
 
-void rzSetClearColor(RZRenderContext* ctx, float r, float g, float b, float a) {
-	ctx->setClearColor(ctx->ctx, r, g, b, a);
+void rzSetClearColor(RZRenderContext* ctx, RZSwapChain* swapChain, float r, float g, float b, float a) {
+	ctx->setClearColor(swapChain, r, g, b, a);
 }
 
-void rzSwap(RZRenderContext* ctx, RZCommandBuffer* cmdBuffer) {
-	ctx->swap(ctx->ctx, cmdBuffer);
+void rzPresent(RZRenderContext* ctx, RZSwapChain* swapChain) {
+	ctx->present(ctx->ctx, swapChain);
 }
 
 RZBuffer* rzAllocateBuffer(RZRenderContext* ctx, RZCommandQueue* queue, RZBufferCreateInfo* createInfo, void* data, size_t size) {
@@ -132,22 +132,22 @@ RZCommandBuffer* rzCreateCommandBuffer(RZRenderContext* ctx, RZCommandQueue* que
 	return ctx->createCommandBuffer(ctx->ctx, queue);
 }
 
-void rzStartRecording(RZRenderContext* ctx, RZCommandBuffer* cmdBuffer) {
-	ctx->startRecording(ctx->ctx, cmdBuffer);
+void rzStartCommandBuffer(RZRenderContext* ctx, RZCommandQueue* queue, RZCommandBuffer* cmdBuffer) {
+	ctx->startCommandBuffer(ctx->ctx, queue, cmdBuffer);
 }
 
-void rzStartRenderRecording(RZRenderContext* ctx, RZCommandBuffer* cmdBuffer) {
-	ctx->startRenderRecording(ctx->ctx, cmdBuffer);
+void rzStartRender(RZRenderContext* ctx, RZFrameBuffer* frameBuffer, RZCommandBuffer* cmdBuffer) {
+	ctx->startRender(ctx->ctx, frameBuffer, cmdBuffer);
 }
 
-void rzEndRenderRecording(RZRenderContext* ctx, RZCommandBuffer* cmdBuffer) {
-	ctx->endRenderRecording(ctx->ctx, cmdBuffer);
+void rzEndRender(RZRenderContext* ctx, RZFrameBuffer* frameBuffer, RZCommandBuffer* cmdBuffer) {
+	ctx->endRender(ctx->ctx, frameBuffer, cmdBuffer);
 }
 
-void rzEndRecording(RZRenderContext* ctx, RZCommandBuffer* cmdBuffer) {
-	ctx->endRecording(ctx->ctx, cmdBuffer);
+void rzEndCommandBuffer(RZRenderContext* ctx, RZCommandBuffer* cmdBuffer) {
+	ctx->endCommandBuffer(ctx->ctx, cmdBuffer);
 }
 
-void rzSubmitCommandBuffer(RZRenderContext* ctx, RZCommandQueue* queue, RZCommandBuffer* cmdBuffer) {
-	ctx->submitCommandBuffer(ctx->ctx, queue, cmdBuffer);
+void rzExecuteCommandBuffer(RZRenderContext* ctx, RZCommandQueue* queue, RZCommandBuffer* cmdBuffer) {
+	ctx->executeCommandBuffer(ctx->ctx, queue, cmdBuffer);
 }
