@@ -1,6 +1,5 @@
 #include <razter/razter.h>
 #include <stdio.h>
-#include <GLFW/glfw3native.h>
 
 int main() {
 	glfwInit();
@@ -15,7 +14,7 @@ int main() {
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	GLFWwindow* window = glfwCreateWindow(800, 600, "Razter Test", NULL, NULL);
-
+	
 	RZCommandQueue** queues;
 	RZSwapChain* swapChain;
 
@@ -126,30 +125,18 @@ int main() {
 
 	RZCommandBuffer* cmdBuffer = rzCreateCommandBuffer(ctx, queue);
 
-	{//Pre-record rendering commands
-		rzStartCommandBuffer(ctx, queue, cmdBuffer);
-		rzStartRender(ctx, backBuffer, cmdBuffer);
-		
-		rzBindBuffer(ctx, cmdBuffer, buffer);
-		rzBindShader(ctx, cmdBuffer, shader);
-		rzBindUniform(ctx, cmdBuffer, shader, uniform);
-		
-		rzDraw(ctx, cmdBuffer, 0, 6);
-		
-		rzEndRender(ctx, backBuffer, cmdBuffer);
-		rzEndCommandBuffer(ctx, cmdBuffer);
-	}
-
 	double ct = glfwGetTime();
 	double dt = ct;
 
 	float accDT = 0;
 	uint32_t frames = 0;
 	uint32_t fps = 0;
+	
+	
 
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
-
+		
 		dt = glfwGetTime() - ct;
 		ct = glfwGetTime();
 
@@ -166,7 +153,18 @@ int main() {
 		view[12] = glfwGetTime()/10.0f;
 		rzUniformData(ctx, uniform, 0, view);
 		
-		printf("Hello\n");
+		rzStartCommandBuffer(ctx, queue, cmdBuffer);
+		rzStartRender(ctx, backBuffer, cmdBuffer);
+		
+		rzBindBuffer(ctx, cmdBuffer, buffer);
+		rzBindShader(ctx, cmdBuffer, shader);
+		rzBindUniform(ctx, cmdBuffer, shader, uniform);
+		
+		rzDraw(ctx, cmdBuffer, 0, 6);
+		
+		rzEndRender(ctx, backBuffer, cmdBuffer);
+		rzEndCommandBuffer(ctx, cmdBuffer);
+		
 		rzExecuteCommandBuffer(ctx, queue, cmdBuffer);
 
 		rzPresent(ctx, swapChain);

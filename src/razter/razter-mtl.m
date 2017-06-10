@@ -115,6 +115,20 @@ void rzmtInitContext(RZRenderContext* ctx, GLFWwindow* window, MTSwapChain** pSw
 	
 	swapChain->queue = queues[0];
 	
+	id<MTLCommandBuffer> setupCmdBuffer = [queues[0]->queue commandBuffer];
+	
+	MTLRenderPassDescriptor* renderPassDescriptor = [MTLRenderPassDescriptor renderPassDescriptor];
+	renderPassDescriptor.colorAttachments[0].texture = backBuffer->texture;
+	renderPassDescriptor.colorAttachments[0].loadAction = MTLLoadActionClear;
+	renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColorMake(0, 0, 0, 1);
+	renderPassDescriptor.colorAttachments[0].storeAction = MTLStoreActionStore;
+	
+	id<MTLRenderCommandEncoder> renderEncoder = [setupCmdBuffer renderCommandEncoderWithDescriptor:renderPassDescriptor];
+	
+	[renderEncoder endEncoding];
+	
+	[setupCmdBuffer commit];
+	
 	*pQueues = queues;
 	*pSwapChain = swapChain;
 }
@@ -389,6 +403,7 @@ void rzmtEndCommandBuffer(MTCTX* ctx, MTCommandBuffer* cmdBuffer) {
 
 void rzmtExecuteCommandBuffer(MTCTX* ctx, MTCommandQueue* queue, MTCommandBuffer* cmdBuffer) {
 	[cmdBuffer->cmdBuffer commit];
+	[cmdBuffer->cmdBuffer waitUntilCompleted];
 }
 
 void rzmtLoadPFN(RZRenderContext* ctx) {
