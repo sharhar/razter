@@ -162,6 +162,7 @@ void rzmtPresent(MTDevice* ctx, MTSwapChain* swapChain) {
 	
 	[cmdBuffer presentDrawable:swapChain->drawable];
 	[cmdBuffer commit];
+    [cmdBuffer waitUntilCompleted];
 }
 
 RZBuffer* rzmtAllocateBuffer(MTDevice* ctx, MTCommandQueue* queue, RZBufferCreateInfo* createInfo, void* data, size_t size) {
