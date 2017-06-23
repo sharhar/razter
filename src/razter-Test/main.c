@@ -4,26 +4,27 @@
 int main() {
 	glfwInit();
 
-	RZPlatform platform = RZ_PLATFORM_VULKAN;
+	RZAPI api = RZ_API_VULKAN;
 	
 #ifdef __APPLE__
-	platform = RZ_PLATFORM_METAL;
+	api = RZ_API_METAL;
 #endif
 
-	RZRenderContext* ctx = rzCreateRenderContext(platform);
+	RZContext* ctx = rzCreateContext(api);
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	GLFWwindow* window = glfwCreateWindow(800, 600, "Razter Test", NULL, NULL);
 	
+    RZDevice* device;
 	RZCommandQueue** queues;
 	RZSwapChain* swapChain;
-
-	rzInitContext(ctx, window, &swapChain, RZ_TRUE, 1, &queues);
+    
+	ctx->createDevice(&device, window, &swapChain, RZ_TRUE, 1, &queues);
 	RZCommandQueue* queue = queues[0];
 
-	rzSetClearColor(ctx, swapChain, 0.0f, 1.0f, 1.0f, 1.0f);
+	ctx->setClearColor(swapChain, 0.0f, 1.0f, 1.0f, 1.0f);
 
-	RZFrameBuffer* backBuffer = rzGetBackBuffer(ctx, swapChain);
+	RZFrameBuffer* backBuffer = ctx->getBackBuffer(swapChain);
 
 	float verts[] = {
 		-0.5f, -0.5f, 0.0f, 1.0f,
@@ -50,7 +51,7 @@ int main() {
 	bufferCreateInfo.type = RZ_BUFFER_TYPE_STATIC;
 	bufferCreateInfo.vertexAttribDesc = &vertexAttribDesc;
 
-	RZBuffer* buffer = rzAllocateBuffer(ctx, queue, &bufferCreateInfo, verts, sizeof(float) * 6 * 4);
+	RZBuffer* buffer = ctx->allocBuffer(device, queue, &bufferCreateInfo, verts, sizeof(float) * 6 * 4);
 
 	RZUniformDescriptor uniformDescriptors[2];
 	uniformDescriptors[0].index = 1;
@@ -87,8 +88,8 @@ int main() {
 #endif
 	
 
-	RZShader* shader = rzCreateShader(ctx, &shaderCreateInfo);
-	RZUniform* uniform = rzCreateUniform(ctx, shader);
+	RZShader* shader = ctx->createShader(device, &shaderCreateInfo);
+	RZUniform* uniform = ctx->createUniform(device, shader);
 
 	float view[] = {
 		1, 0, 0, 0,
@@ -102,7 +103,7 @@ int main() {
 		0, 0, 0, 1
 	};
 
-	rzUniformData(ctx, uniform, 0, view);
+	ctx->uniformData(device, uniform, 0, view);
 
 	float imageData[] = {
 		1.0f, 0.0f, 0.0f, 1.0f,    0.0f, 1.0f, 0.0f, 1.0f,   0.0f, 0.0f, 1.0f, 1.0f,    0.0f, 0.0f, 0.0f, 1.0f,
@@ -119,11 +120,11 @@ int main() {
 	textureCreateInfo.bytesPerComponent = sizeof(float);
 	textureCreateInfo.componentType = RZ_COMPONENT_TYPE_FLOAT_32;
 
-	RZTexture* texture = rzCreateTexture(ctx, queue, &textureCreateInfo);
+	RZTexture* texture = ctx->createTexture(device, queue, &textureCreateInfo);
 
-	rzUniformData(ctx, uniform, 1, texture);
+	ctx->uniformData(device, uniform, 1, texture);
 
-	RZCommandBuffer* cmdBuffer = rzCreateCommandBuffer(ctx, queue);
+	RZCommandBuffer* cmdBuffer = ctx->createCommandBuffer(device, queue);
 
 	double ct = glfwGetTime();
 	double dt = ct;
@@ -151,23 +152,23 @@ int main() {
 		}
 
 		view[12] = glfwGetTime()/10.0f;
-		rzUniformData(ctx, uniform, 0, view);
+		ctx->uniformData(device, uniform, 0, view);
 		
-		rzStartCommandBuffer(ctx, queue, cmdBuffer);
-		rzStartRender(ctx, backBuffer, cmdBuffer);
+		ctx->startCommandBuffer(device, queue, cmdBuffer);
+		ctx->startRender(device, backBuffer, cmdBuffer);
 		
-		rzBindBuffer(ctx, cmdBuffer, buffer);
-		rzBindShader(ctx, cmdBuffer, shader);
-		rzBindUniform(ctx, cmdBuffer, shader, uniform);
+		ctx->bindBuffer(device, cmdBuffer, buffer);
+		ctx->bindShader(device, cmdBuffer, shader);
+		ctx->bindUniform(device, cmdBuffer, shader, uniform);
 		
-		rzDraw(ctx, cmdBuffer, 0, 6);
+		ctx->draw(device, cmdBuffer, 0, 6);
 		
-		rzEndRender(ctx, backBuffer, cmdBuffer);
-		rzEndCommandBuffer(ctx, cmdBuffer);
+		ctx->endRender(device, backBuffer, cmdBuffer);
+		ctx->endCommandBuffer(device, cmdBuffer);
 		
-		rzExecuteCommandBuffer(ctx, queue, cmdBuffer);
+		ctx->executeCommandBuffer(device, queue, cmdBuffer);
 
-		rzPresent(ctx, swapChain);
+		ctx->present(device, swapChain);
 	}
 
 	glfwTerminate();

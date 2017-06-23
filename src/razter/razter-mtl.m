@@ -5,9 +5,9 @@
 #import <Metal/Metal.h>
 #import <QuartzCore/CAMetalLayer.h>
 
-typedef struct MTCTX {
+typedef struct MTDevice {
 	id<MTLDevice> device;
-} MTCTX;
+} MTDevice;
 
 typedef struct MTFrameBuffer {
 	id<MTLTexture> texture;
@@ -62,26 +62,20 @@ typedef struct MTSwapChain {
 	MTFrameBuffer* backBuffer;
 } MTSwapChain;
 
-void rzmtInit(RZRenderContext* ctx) {
-	ctx->ctx = (MTCTX*)malloc(sizeof(MTCTX));
-}
-
-void rzmtInitContext(RZRenderContext* ctx, GLFWwindow* window, MTSwapChain** pSwapChain, RZBool debug, uint32_t queueCount, MTCommandQueue*** pQueues) {
-	ctx->ctx = malloc(sizeof(MTCTX));
-	
-	MTCTX* mctx = (MTCTX*)ctx->ctx;
+void rzmtCreateDevice(RZDevice** pDevice, GLFWwindow* window, RZSwapChain** pSwapChain, RZBool debug, uint32_t queueCount, RZCommandQueue*** pQueues) {
+	MTDevice* device = (MTDevice*)malloc(sizeof(MTDevice));
 	
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
 	
-	mctx->device = MTLCreateSystemDefaultDevice();
+	device->device = MTLCreateSystemDefaultDevice();
 	
 	MTSwapChain* swapChain = malloc(sizeof(MTSwapChain));
 	
 	swapChain->window = glfwGetCocoaWindow(window);
 	
 	swapChain->metalLayer = [CAMetalLayer layer];
-	swapChain->metalLayer.device = mctx->device;
+	swapChain->metalLayer.device = device->device;
 	swapChain->metalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm;
 	swapChain->metalLayer.frame = CGRectMake(0, 0, width, height);
 	swapChain->metalLayer.framebufferOnly = NO;
@@ -101,7 +95,7 @@ void rzmtInitContext(RZRenderContext* ctx, GLFWwindow* window, MTSwapChain** pSw
 	
 	textureDesc.usage = MTLTextureUsageRenderTarget;
 	
-	backBuffer->texture =[mctx->device newTextureWithDescriptor:textureDesc];
+	backBuffer->texture =[device->device newTextureWithDescriptor:textureDesc];
 	
 	swapChain->backBuffer = backBuffer;
 	
@@ -110,7 +104,7 @@ void rzmtInitContext(RZRenderContext* ctx, GLFWwindow* window, MTSwapChain** pSw
 	for(uint32_t i = 0; i < queueCount;i++) {
 		queues[i] = malloc(sizeof(MTCommandQueue));
 		
-		queues[i]->queue = [mctx->device newCommandQueue];
+		queues[i]->queue = [device->device newCommandQueue];
 	}
 	
 	swapChain->queue = queues[0];
@@ -129,6 +123,7 @@ void rzmtInitContext(RZRenderContext* ctx, GLFWwindow* window, MTSwapChain** pSw
 	
 	[setupCmdBuffer commit];
 	
+    *pDevice = device;
 	*pQueues = queues;
 	*pSwapChain = swapChain;
 }
@@ -144,7 +139,7 @@ void rzmtSetClearColor(MTSwapChain* swapChain, float r, float g, float b, float 
 	swapChain->backBuffer->clearA = a;
 }
 
-void rzmtPresent(MTCTX* ctx, MTSwapChain* swapChain) {
+void rzmtPresent(MTDevice* ctx, MTSwapChain* swapChain) {
 	swapChain->drawable = [swapChain->metalLayer nextDrawable];
 	id<MTLCommandBuffer> cmdBuffer = [swapChain->queue->queue commandBuffer];
 	
@@ -169,7 +164,7 @@ void rzmtPresent(MTCTX* ctx, MTSwapChain* swapChain) {
 	[cmdBuffer commit];
 }
 
-RZBuffer* rzmtAllocateBuffer(MTCTX* ctx, MTCommandQueue* queue, RZBufferCreateInfo* createInfo, void* data, size_t size) {
+RZBuffer* rzmtAllocateBuffer(MTDevice* ctx, MTCommandQueue* queue, RZBufferCreateInfo* createInfo, void* data, size_t size) {
 	MTBuffer* buffer = malloc(sizeof(MTBuffer));
 	
 	buffer->buffer = [ctx->device newBufferWithBytes:data length:size options:MTLResourceOptionCPUCacheModeDefault];
@@ -177,19 +172,19 @@ RZBuffer* rzmtAllocateBuffer(MTCTX* ctx, MTCommandQueue* queue, RZBufferCreateIn
 	return buffer;
 }
 
-void rzmtUpdateBuffer(RZRenderContext* ctx, MTBuffer* buffer, void* data, size_t size) {
+void rzmtUpdateBuffer(MTDevice* ctx, MTBuffer* buffer, void* data, size_t size) {
 	
 }
 
-void rzmtBindBuffer(MTCTX* ctx, MTCommandBuffer* cmdBuffer, MTBuffer* buffer) {
+void rzmtBindBuffer(MTDevice* ctx, MTCommandBuffer* cmdBuffer, MTBuffer* buffer) {
 	[cmdBuffer->renderEncoder setVertexBuffer:buffer->buffer offset:0 atIndex:0];
 }
 
-void rzmtFreeBuffer(MTCTX* ctx, MTBuffer* buffer) {
+void rzmtFreeBuffer(MTDevice* ctx, MTBuffer* buffer) {
 	
 }
 
-RZShader* rzmtCreateShader(MTCTX* ctx, RZShaderCreateInfo* createInfo) {
+RZShader* rzmtCreateShader(MTDevice* ctx, RZShaderCreateInfo* createInfo) {
 	MTShader* shader = malloc(sizeof(MTShader));
 	
 	shader->descriptorCount = createInfo->descriptorCount;
@@ -251,20 +246,20 @@ RZShader* rzmtCreateShader(MTCTX* ctx, RZShaderCreateInfo* createInfo) {
 	return shader;
 }
 
-void rzmtBindShader(MTCTX* ctx, MTCommandBuffer* cmdBuffer, MTShader* shader) {
+void rzmtBindShader(MTDevice* ctx, MTCommandBuffer* cmdBuffer, MTShader* shader) {
 	[cmdBuffer->renderEncoder setRenderPipelineState:shader->pipelineState];
 }
 
-void rzmtDestroyShader(MTCTX* ctx, MTShader* shader) {
+void rzmtDestroyShader(MTDevice* ctx, MTShader* shader) {
 	
 }
 
-void rzmtDraw(MTCTX* ctx, MTCommandBuffer* cmdBuffer, uint32_t firstVertex, uint32_t vertexCount) {
+void rzmtDraw(MTDevice* ctx, MTCommandBuffer* cmdBuffer, uint32_t firstVertex, uint32_t vertexCount) {
 	[cmdBuffer->renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:firstVertex vertexCount:vertexCount];
 }
 
 
-RZUniform* rzmtCreateUniform(MTCTX* ctx, MTShader* shader) {
+RZUniform* rzmtCreateUniform(MTDevice* ctx, MTShader* shader) {
 	MTUniform* uniform = malloc(sizeof(MTUniform));
 	
 	uniform->count = shader->descriptorCount;
@@ -287,7 +282,7 @@ RZUniform* rzmtCreateUniform(MTCTX* ctx, MTShader* shader) {
 	return uniform;
 }
 
-void rzmtBindUniform(MTCTX* ctx, MTCommandBuffer* cmdBuffer, MTShader* shader, MTUniform* uniform) {
+void rzmtBindUniform(MTDevice* ctx, MTCommandBuffer* cmdBuffer, MTShader* shader, MTUniform* uniform) {
 	for(uint32_t i = 0; i < uniform->count;i++) {
 		RZUniformType type = uniform->types[i];
 		
@@ -302,7 +297,7 @@ void rzmtBindUniform(MTCTX* ctx, MTCommandBuffer* cmdBuffer, MTShader* shader, M
 	}
 }
 
-void rzmtUniformData(MTCTX* ctx, MTUniform* uniform, uint32_t index, void* data) {
+void rzmtUniformData(MTDevice* ctx, MTUniform* uniform, uint32_t index, void* data) {
 	if(uniform->types[index] == RZ_UNIFORM_TYPE_BUFFER) {
 		id<MTLBuffer> buffer = (id<MTLBuffer>)uniform->uniforms[index];
 		void* mapped = [buffer contents];
@@ -312,11 +307,11 @@ void rzmtUniformData(MTCTX* ctx, MTUniform* uniform, uint32_t index, void* data)
 	}
 }
 
-void rzmtDestroyUniform(MTCTX* ctx, RZUniform* uniform) {
+void rzmtDestroyUniform(MTDevice* ctx, RZUniform* uniform) {
 	
 }
 
-RZTexture* rzmtCreateTexture(MTCTX* ctx, MTCommandQueue* queue, RZTextureCreateInfo* createInfo) {
+RZTexture* rzmtCreateTexture(MTDevice* ctx, MTCommandQueue* queue, RZTextureCreateInfo* createInfo) {
 	MTTexture* texture = malloc(sizeof(MTTexture));
 	
 	MTLPixelFormat* pixelFormat = MTLPixelFormatRGBA32Float;
@@ -370,20 +365,20 @@ RZTexture* rzmtCreateTexture(MTCTX* ctx, MTCommandQueue* queue, RZTextureCreateI
 	return texture;
 }
 
-void rzmtDestroyTexture(MTCTX* ctx, RZTexture* texture) {
+void rzmtDestroyTexture(MTDevice* ctx, RZTexture* texture) {
 	
 }
 
-RZCommandBuffer* rzmtCreateCommandBuffer(MTCTX* ctx, MTCommandQueue* queue) {
+RZCommandBuffer* rzmtCreateCommandBuffer(MTDevice* ctx, MTCommandQueue* queue) {
 	MTCommandBuffer* cmdBuffer = malloc(sizeof(MTCommandBuffer));
 	return cmdBuffer;
 }
 
-void rzmtStartCommandBuffer(MTCTX* ctx, MTCommandQueue* queue, MTCommandBuffer* cmdBuffer) {
+void rzmtStartCommandBuffer(MTDevice* ctx, MTCommandQueue* queue, MTCommandBuffer* cmdBuffer) {
 	cmdBuffer->cmdBuffer = [queue->queue commandBuffer];
 }
 
-void rzmtStartRender(MTCTX* ctx, MTFrameBuffer* frameBuffer, MTCommandBuffer* cmdBuffer) {
+void rzmtStartRender(MTDevice* ctx, MTFrameBuffer* frameBuffer, MTCommandBuffer* cmdBuffer) {
 	MTLRenderPassDescriptor* renderPassDescriptor = [MTLRenderPassDescriptor renderPassDescriptor];
 	renderPassDescriptor.colorAttachments[0].texture = frameBuffer->texture;
 	renderPassDescriptor.colorAttachments[0].loadAction = MTLLoadActionClear;
@@ -393,21 +388,21 @@ void rzmtStartRender(MTCTX* ctx, MTFrameBuffer* frameBuffer, MTCommandBuffer* cm
 	cmdBuffer->renderEncoder = [cmdBuffer->cmdBuffer renderCommandEncoderWithDescriptor:renderPassDescriptor];
 }
 
-void rzmtEndRender(MTCTX* ctx, MTFrameBuffer* frameBuffer, MTCommandBuffer* cmdBuffer) {
+void rzmtEndRender(MTDevice* ctx, MTFrameBuffer* frameBuffer, MTCommandBuffer* cmdBuffer) {
 	[cmdBuffer->renderEncoder endEncoding];
 }
 
-void rzmtEndCommandBuffer(MTCTX* ctx, MTCommandBuffer* cmdBuffer) {
+void rzmtEndCommandBuffer(MTDevice* ctx, MTCommandBuffer* cmdBuffer) {
 	
 }
 
-void rzmtExecuteCommandBuffer(MTCTX* ctx, MTCommandQueue* queue, MTCommandBuffer* cmdBuffer) {
+void rzmtExecuteCommandBuffer(MTDevice* ctx, MTCommandQueue* queue, MTCommandBuffer* cmdBuffer) {
 	[cmdBuffer->cmdBuffer commit];
 	[cmdBuffer->cmdBuffer waitUntilCompleted];
 }
 
-void rzmtLoadPFN(RZRenderContext* ctx) {
-	ctx->initContext = rzmtInitContext;
+void rzmtLoadPFN(RZContext* ctx) {
+	ctx->createDevice = rzmtCreateDevice;
 	ctx->getBackBuffer = rzmtGetBackBuffer;
 	ctx->setClearColor = rzmtSetClearColor;
 	ctx->present = rzmtPresent;

@@ -42,17 +42,16 @@ typedef struct VKTexture {
 
 typedef struct VKCommandQueue {
 	VKLDeviceGraphicsContext* devCon;
-	VkCommandBuffer* setupCmdBuffer;
+	VkCommandBuffer setupCmdBuffer;
 } VKCommandQueue;
 
 typedef struct VKCommandBuffer {
 	VkCommandBuffer cmdBuffer;
 } VKCommandBuffer;
 
-void rzvkInitContext(RZRenderContext* ctx, GLFWwindow* window, VKSwapChain** pSwapChain, RZBool debug, uint32_t queueCount, VKCommandQueue*** pQueues) {
-	ctx->ctx = (VKCTX*)malloc(sizeof(VKCTX));
-
-	VKCTX* vctx = (VKCTX*)ctx->ctx;
+void rzvkInitContext(RZDevice* ctx, GLFWwindow* window, VKSwapChain** pSwapChain, RZBool debug, uint32_t queueCount, VKCommandQueue*** pQueues) {
+    
+	VKCTX* vctx = (VKCTX*)malloc(sizeof(VKCTX));
 
 	VkBool32 vkDebug = VK_FALSE;
 
@@ -128,7 +127,7 @@ void rzvkFreeBuffer(VKCTX* ctx, VKBuffer* buffer) {
 RZShader* rzvkCreateShader(VKCTX* ctx, RZShaderCreateInfo* createInfo) {
 	VKShader* shader = malloc(sizeof(VKShader));
 
-	VKFrameBuffer* frameBuffer = (VkFramebuffer*)createInfo->frameBuffer;
+	VKFrameBuffer* frameBuffer = (VKFrameBuffer*)createInfo->frameBuffer;
 	
 	shader->descriptorCount = createInfo->descriptorCount;
 	shader->descriptors = malloc_c(sizeof(RZUniformDescriptor) * shader->descriptorCount);
@@ -353,12 +352,12 @@ void rzvkEndCommandBuffer(VKCTX* ctx, VKCommandBuffer* cmdBuffer) {
 	vklEndCommandBuffer(ctx->device, cmdBuffer->cmdBuffer);
 }
 
-void rzvkExecuteCommandBuffer(RZRenderContext* ctx, VKCommandQueue* queue, VKCommandBuffer* cmdBuffer) {
+void rzvkExecuteCommandBuffer(VKCTX* ctx, VKCommandQueue* queue, VKCommandBuffer* cmdBuffer) {
 	vklExecuteCommandBuffer(queue->devCon, cmdBuffer->cmdBuffer);
 }
 
-void rzvkLoadPFN(RZRenderContext* ctx) {
-	ctx->initContext = rzvkInitContext;
+void rzvkLoadPFN(RZContext* ctx) {
+	ctx->createDevice = rzvkInitContext;
 	ctx->getBackBuffer = rzvkGetBackBuffer;
 	ctx->setClearColor = rzvkSetClearColor;
 	ctx->present = rzvkPresent;

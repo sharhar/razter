@@ -8,7 +8,7 @@ extern "C" {
 #include <GLFW/glfw3.h>
 #include <stdlib.h>
 
-typedef void RZInternalContext;
+typedef void RZDevice;
 typedef void RZSwapChain;
 typedef void RZBuffer;
 typedef void RZShader;
@@ -23,10 +23,10 @@ typedef enum RZBool {
 	RZ_TRUE = 0x01
 } RZBool;
 
-typedef enum RZPlatform {
-	RZ_PLATFORM_METAL,
-	RZ_PLATFORM_VULKAN
-} RZPlatform;
+typedef enum RZAPI {
+	RZ_API_METAL,
+	RZ_API_VULKAN
+} RZAPI;
 
 typedef enum RZBufferUsage {
 	RZ_BUFFER_USAGE_VERTEX = 0x01,
@@ -98,83 +98,47 @@ typedef struct RZTextureCreateInfo {
 	size_t componentsPerPixel;
 	void* data;
 } RZTextureCreateInfo;
-	
-struct RZRenderContext;
-typedef struct RZRenderContext RZRenderContext;
 
-typedef struct RZRenderContext {
-	RZInternalContext* ctx;
-
-	void (*initContext)(RZRenderContext* ctx, GLFWwindow* window, RZSwapChain** pSwapChain, RZBool debug, uint32_t queueCount, RZCommandQueue*** pQueues);
+typedef struct RZContext {
+	void (*createDevice)(RZDevice** pDevice, GLFWwindow* window, RZSwapChain** pSwapChain, RZBool debug, uint32_t queueCount, RZCommandQueue*** pQueues);
 	RZFrameBuffer* (*getBackBuffer)(RZSwapChain* swapChain);
 	void (*setClearColor)(RZSwapChain* ctx, float r, float g, float b, float a);
-	void (*present)(RZInternalContext* ctx, RZSwapChain* swapChain);
+	void (*present)(RZDevice* ctx, RZSwapChain* swapChain);
 
-	RZBuffer* (*allocBuffer)(RZInternalContext* ctx, RZCommandQueue* queue, RZBufferCreateInfo* createInfo, void* data, size_t size);
-	void (*updateBuffer)(RZInternalContext* ctx, RZBuffer* buffer, void* data, size_t size);
-	void (*bindBuffer)(RZInternalContext* ctx, RZCommandBuffer* cmdBuffer, RZBuffer* buffer);
-	void (*freeBuffer)(RZInternalContext* ctx, RZBuffer* buffer);
+	RZBuffer* (*allocBuffer)(RZDevice* ctx, RZCommandQueue* queue, RZBufferCreateInfo* createInfo, void* data, size_t size);
+	void (*updateBuffer)(RZDevice* ctx, RZBuffer* buffer, void* data, size_t size);
+	void (*bindBuffer)(RZDevice* ctx, RZCommandBuffer* cmdBuffer, RZBuffer* buffer);
+	void (*freeBuffer)(RZDevice* ctx, RZBuffer* buffer);
 
-	RZShader* (*createShader)(RZInternalContext* ctx, RZShaderCreateInfo* createInfo);
-	void (*bindShader)(RZInternalContext* ctx, RZCommandBuffer* cmdBuffer, RZShader* shader);
-	void (*destroyShader)(RZInternalContext* ctx, RZShader* shader);
+	RZShader* (*createShader)(RZDevice* ctx, RZShaderCreateInfo* createInfo);
+	void (*bindShader)(RZDevice* ctx, RZCommandBuffer* cmdBuffer, RZShader* shader);
+	void (*destroyShader)(RZDevice* ctx, RZShader* shader);
 
-	void(*draw)(RZInternalContext* ctx, RZCommandBuffer* cmdBuffer, uint32_t firstVertex, uint32_t vertexCount);
+	void(*draw)(RZDevice* ctx, RZCommandBuffer* cmdBuffer, uint32_t firstVertex, uint32_t vertexCount);
 
-	RZUniform* (*createUniform)(RZInternalContext* ctx, RZShader* shader);
-	void (*bindUniform)(RZInternalContext* ctx, RZCommandBuffer* cmdBuffer, RZShader* shader, RZUniform* uniform);
-	void (*uniformData)(RZInternalContext* ctx, RZUniform* uniform, uint32_t index, void* data);
-	void (*destroyUniform)(RZInternalContext* ctx, RZUniform* uniform);
+	RZUniform* (*createUniform)(RZDevice* ctx, RZShader* shader);
+	void (*bindUniform)(RZDevice* ctx, RZCommandBuffer* cmdBuffer, RZShader* shader, RZUniform* uniform);
+	void (*uniformData)(RZDevice* ctx, RZUniform* uniform, uint32_t index, void* data);
+	void (*destroyUniform)(RZDevice* ctx, RZUniform* uniform);
 
-	RZTexture* (*createTexture)(RZInternalContext* ctx, RZCommandQueue* queue, RZTextureCreateInfo* createInfo);
-	void(*destroyTexture)(RZInternalContext* ctx, RZTexture* texture);
+	RZTexture* (*createTexture)(RZDevice* ctx, RZCommandQueue* queue, RZTextureCreateInfo* createInfo);
+	void(*destroyTexture)(RZDevice* ctx, RZTexture* texture);
 
-	RZCommandBuffer* (*createCommandBuffer)(RZInternalContext* ctx, RZCommandQueue* queue);
-	void(*startCommandBuffer)(RZInternalContext* ctx, RZCommandQueue* queue, RZCommandBuffer* cmdBuffer);
-	void(*startRender)(RZInternalContext* ctx, RZFrameBuffer* frameBuffer, RZCommandBuffer* cmdBuffer);
-	void(*endRender)(RZInternalContext* ctx, RZFrameBuffer* frameBuffer, RZCommandBuffer* cmdBuffer);
-	void(*endCommandBuffer)(RZInternalContext* ctx, RZCommandBuffer* cmdBuffer);
-	void(*executeCommandBuffer)(RZInternalContext* ctx, RZCommandQueue* queue, RZCommandBuffer* cmdBuffer);
-} RZRenderContext;
+	RZCommandBuffer* (*createCommandBuffer)(RZDevice* ctx, RZCommandQueue* queue);
+	void(*startCommandBuffer)(RZDevice* ctx, RZCommandQueue* queue, RZCommandBuffer* cmdBuffer);
+	void(*startRender)(RZDevice* ctx, RZFrameBuffer* frameBuffer, RZCommandBuffer* cmdBuffer);
+	void(*endRender)(RZDevice* ctx, RZFrameBuffer* frameBuffer, RZCommandBuffer* cmdBuffer);
+	void(*endCommandBuffer)(RZDevice* ctx, RZCommandBuffer* cmdBuffer);
+	void(*executeCommandBuffer)(RZDevice* ctx, RZCommandQueue* queue, RZCommandBuffer* cmdBuffer);
+} RZContext;
 
-void rzvkLoadPFN(RZRenderContext* ctx);
+void rzvkLoadPFN(RZContext* ctx);
 	
 #ifdef __APPLE__
-void rzmtLoadPFN(RZRenderContext* ctx);
+void rzmtLoadPFN(RZContext* ctx);
 #endif
 
-RZRenderContext* rzCreateRenderContext(RZPlatform type);
-
-void rzInitContext(RZRenderContext* ctx, GLFWwindow* window, RZSwapChain** pSwapChain, RZBool debug, uint32_t queueCount, RZCommandQueue*** pQueues);
-RZFrameBuffer* rzGetBackBuffer(RZRenderContext* ctx, RZSwapChain* swapChain);
-void rzSetClearColor(RZRenderContext* ctx, RZSwapChain* swapChain, float r, float g, float b, float a);
-void rzPresent(RZRenderContext* ctx, RZSwapChain* swapChain);
-
-RZBuffer* rzAllocateBuffer(RZRenderContext* ctx, RZCommandQueue* queue, RZBufferCreateInfo* createInfo, void* data, size_t size);
-void rzUpdateBuffer(RZRenderContext* ctx, RZBuffer* buffer, void* data, size_t size);
-void rzBindBuffer(RZRenderContext* ctx, RZCommandBuffer* cmdBuffer, RZBuffer* buffer);
-void rzFreeBuffer(RZRenderContext* ctx, RZBuffer* buffer);
-
-RZShader* rzCreateShader(RZRenderContext* ctx, RZShaderCreateInfo* createInfo);
-void rzBindShader(RZRenderContext* ctx, RZCommandBuffer* cmdBuffer, RZShader* shader);
-void rzDestroyShader(RZRenderContext* ctx, RZShader* shader);
-
-void rzDraw(RZRenderContext* ctx, RZCommandBuffer* cmdBuffer, uint32_t firstVertex, uint32_t vertexCount);
-
-RZUniform* rzCreateUniform(RZRenderContext* ctx, RZShader* shader);
-void rzBindUniform(RZRenderContext* ctx, RZCommandBuffer* cmdBuffer, RZShader* shader, RZUniform* uniform);
-void rzUniformData(RZRenderContext* ctx, RZUniform* uniform, uint32_t index, void* data);
-void rzDestroyUniform(RZRenderContext* ctx, RZUniform* uniform);
-
-RZTexture* rzCreateTexture(RZRenderContext* ctx, RZCommandQueue* queue, RZTextureCreateInfo* createInfo);
-void rzDestroyTexture(RZRenderContext* ctx, RZTexture* texture);
-
-RZCommandBuffer* rzCreateCommandBuffer(RZRenderContext* ctx, RZCommandQueue* queue);
-void rzStartCommandBuffer(RZRenderContext* ctx, RZCommandQueue* queue, RZCommandBuffer* cmdBuffer);
-void rzStartRender(RZRenderContext* ctx, RZFrameBuffer* frameBuffer, RZCommandBuffer* cmdBuffer);
-void rzEndRender(RZRenderContext* ctx, RZFrameBuffer* frameBuffer, RZCommandBuffer* cmdBuffer);
-void rzEndCommandBuffer(RZRenderContext* ctx, RZCommandBuffer* cmdBuffer);
-void rzExecuteCommandBuffer(RZRenderContext* ctx, RZCommandQueue* queue, RZCommandBuffer* cmdBuffer);
+RZContext* rzCreateContext(RZAPI type);
 
 char* rzReadFileFromPath(char *filename, size_t* size);
 
