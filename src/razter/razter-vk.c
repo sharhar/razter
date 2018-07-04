@@ -49,7 +49,7 @@ typedef struct VKCommandBuffer {
 	VkCommandBuffer cmdBuffer;
 } VKCommandBuffer;
 
-void rzvkInitContext(RZDevice* ctx, GLFWwindow* window, VKSwapChain** pSwapChain, RZBool debug, uint32_t queueCount, VKCommandQueue*** pQueues) {
+void rzvkInitContext(VKCTX** pCtx, GLFWwindow* window, VKSwapChain** pSwapChain, RZBool debug, uint32_t queueCount, VKCommandQueue*** pQueues) {
     
 	VKCTX* vctx = (VKCTX*)malloc(sizeof(VKCTX));
 
@@ -84,6 +84,7 @@ void rzvkInitContext(RZDevice* ctx, GLFWwindow* window, VKSwapChain** pSwapChain
 
 	*pQueues = queues;
 	*pSwapChain = swapChain;
+	*pCtx = vctx;
 }
 
 RZFrameBuffer* rzvkGetBackBuffer(VKSwapChain* swapChain) {
